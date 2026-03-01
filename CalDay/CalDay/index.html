@@ -1,0 +1,1944 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>お薬カレンダー</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-light: #eef2ff;
+      --bg: #f5f7fb;
+      --card-bg: rgba(255,255,255,0.72);
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --border: rgba(226,232,240,0.6);
+      --error: #ef4444;
+      --success: #10b981;
+      --success-hover: #059669;
+      --radius: 20px;
+      --radius-btn: 16px;
+      --radius-pill: 50px;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+      --shadow-md: 0 8px 32px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.02);
+      --shadow-lg: 0 16px 48px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.02);
+      --header-grad: linear-gradient(145deg, #6366f1 0%, #818cf8 60%, #a5b4fc 100%);
+      --header-shadow: rgba(99, 102, 241, 0.2);
+      --btn-grad: linear-gradient(145deg, #6366f1, #818cf8);
+      --btn-shadow: rgba(99, 102, 241, 0.25);
+      --input-focus-shadow: rgba(99, 102, 241, 0.12);
+      --result-grad: linear-gradient(145deg, rgba(238,242,255,0.8), rgba(224,231,255,0.6));
+      --surface-alt: #f1f5f9;
+      --row-hover: rgba(238,242,255,0.5);
+      --glass-bg: rgba(255,255,255,0.55);
+      --glass-border: rgba(255,255,255,0.3);
+      --glass-card-bg: rgba(255,255,255,0.65);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      line-height: 1.65;
+      padding: 20px;
+      padding-top: 20px;
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .card {
+      background: var(--glass-card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+      box-shadow: var(--shadow-lg);
+      padding: 32px;
+      border: 1px solid var(--glass-border);
+    }
+
+    /* ヘッダー */
+    .app-header {
+      background: var(--header-grad);
+      border-radius: 24px;
+      padding: 28px 32px;
+      color: #fff;
+      text-align: center;
+      box-shadow: 0 12px 40px var(--header-shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .app-header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .app-header h1 {
+      font-size: 23px;
+      font-weight: 800;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      letter-spacing: 0.01em;
+      position: relative;
+    }
+    .app-header h1 svg { width: 26px; height: 26px; }
+    .app-header p {
+      font-size: 24px;
+      font-weight: 800;
+      margin-top: 6px;
+      letter-spacing: -0.01em;
+      position: relative;
+    }
+
+    h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.01em;
+    }
+    h2 svg { width: 20px; height: 20px; color: var(--primary); }
+
+    .input-group { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 14px 18px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: 16px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: inherit;
+      color: var(--text-main);
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(255,255,255,0.85);
+      box-shadow: 0 0 0 4px var(--input-focus-shadow), 0 4px 16px rgba(0,0,0,0.04);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* プリセット */
+    .preset-btns {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .preset-btn {
+      padding: 7px 16px;
+      font-size: 12px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: none;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .preset-btn:hover, .preset-btn:active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px var(--btn-shadow);
+      transform: scale(0.96);
+    }
+
+    /* ボタン */
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius-btn);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+      pointer-events: none;
+      border-radius: var(--radius-btn) var(--radius-btn) 0 0;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary {
+      background: var(--btn-grad);
+      color: #fff;
+      box-shadow: 0 6px 20px var(--btn-shadow);
+    }
+    .btn-primary:hover { box-shadow: 0 8px 28px var(--btn-shadow); transform: translateY(-1px); }
+    .btn-secondary {
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1.5px solid var(--border);
+      color: var(--text-sub);
+    }
+    .btn-secondary::after { display: none; }
+    .btn-secondary:hover { border-color: #94a3b8; color: var(--text-main); }
+    .btn-success {
+      background: linear-gradient(145deg, #10b981, #34d399);
+      color: #fff;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2);
+    }
+    .btn-success:hover { box-shadow: 0 8px 28px rgba(16, 185, 129, 0.3); transform: translateY(-1px); }
+    .btn-share {
+      background: linear-gradient(145deg, #3b82f6, #60a5fa);
+      color: #fff;
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.2);
+    }
+    .btn-share:hover { box-shadow: 0 8px 28px rgba(59, 130, 246, 0.3); transform: translateY(-1px); }
+    .btn-copy {
+      background: linear-gradient(145deg, #f59e0b, #fbbf24);
+      color: #fff;
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.2);
+    }
+    .btn-copy:hover { box-shadow: 0 8px 28px rgba(245, 158, 11, 0.3); transform: translateY(-1px); }
+    .extra-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    /* 結果 */
+    .result-area {
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+    .result-area.active { animation: fadeSlideIn 0.35s ease-out; }
+    .result-main {
+      background: var(--result-grad);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 16px;
+      border: 1px solid var(--glass-border);
+    }
+    .result-label { font-size: 12px; color: var(--primary); font-weight: 700; margin-bottom: 4px; letter-spacing: 0.04em; }
+    .result-value { font-size: 28px; font-weight: 800; color: var(--primary-hover); letter-spacing: -0.01em; }
+    .result-value.empty { color: #cbd5e1; font-size: 22px; font-weight: 600; }
+    .result-sub-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .result-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      border: 1px solid var(--glass-border);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .result-card:hover { border-color: var(--primary-light); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+    .result-card .k { font-size: 10px; color: var(--text-sub); margin-bottom: 2px; font-weight: 600; }
+    .result-card .v { font-size: 18px; font-weight: 800; color: var(--text-main); letter-spacing: -0.01em; }
+
+    /* アラート */
+    .warn-box {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: rgba(254,242,242,0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: var(--error);
+      border-radius: 14px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(254,202,202,0.6);
+      font-weight: 500;
+    }
+    .success-box {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: rgba(236,253,245,0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: var(--success);
+      border-radius: 14px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(167,243,208,0.6);
+      font-weight: 500;
+    }
+    .hint {
+      margin-top: 20px;
+      font-size: 11px;
+      color: var(--text-sub);
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--glass-border);
+      line-height: 1.7;
+    }
+    .hint b { color: var(--text-sub); }
+
+    /* --- ガントチャート --- */
+    .gantt-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .gantt-nav .gantt-period {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .gantt-nav button {
+      background: var(--primary-light);
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 13px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .gantt-nav button:hover { background: var(--primary); color: #fff; transform: scale(0.96); }
+
+    .gantt-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      background: var(--glass-card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .gantt-wrapper::-webkit-scrollbar { height: 6px; }
+    .gantt-wrapper::-webkit-scrollbar-track { background: var(--surface-alt); border-radius: 3px; }
+    .gantt-wrapper::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .gantt-wrapper::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* ヘッダー行 */
+    .gantt-dates {
+      display: flex;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: rgba(248,250,252,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .gantt-label-col {
+      min-width: 120px;
+      max-width: 120px;
+      flex-shrink: 0;
+      padding: 8px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-sub);
+      border-right: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .gantt-date-cell {
+      min-width: 38px;
+      flex: 0 0 38px;
+      text-align: center;
+      padding: 8px 0;
+      font-size: 10px;
+      color: var(--text-sub);
+      border-right: 1px solid rgba(241,245,249,0.5);
+    }
+    .gantt-date-cell .gantt-dow { font-size: 9px; font-weight: 600; }
+    .gantt-date-cell .gantt-day { font-size: 13px; font-weight: 700; color: var(--text-main); margin-top: 1px; }
+    .gantt-date-cell.sun .gantt-day,
+    .gantt-date-cell.sun .gantt-dow { color: #ef4444; }
+    .gantt-date-cell.sat .gantt-day,
+    .gantt-date-cell.sat .gantt-dow { color: #3b82f6; }
+    .gantt-date-cell.today {
+      background: linear-gradient(180deg, rgba(254,249,195,0.4) 0%, rgba(254,243,199,0.3) 100%);
+    }
+    .gantt-date-cell.today .gantt-day {
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px var(--btn-shadow);
+    }
+
+    /* エントリ行 */
+    .gantt-row {
+      display: flex;
+      border-bottom: 1px solid rgba(241,245,249,0.4);
+      min-height: 56px;
+      transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .gantt-row:last-child { border-bottom: none; }
+    .gantt-row:hover { background: var(--row-hover); }
+    .gantt-row-label {
+      min-width: 120px;
+      max-width: 120px;
+      flex-shrink: 0;
+      padding: 8px 10px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .gantt-row-color {
+      width: 4px;
+      height: 32px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .gantt-row-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .gantt-row-name {
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-main);
+    }
+    .gantt-row-days {
+      font-size: 10px;
+      color: var(--text-sub);
+      font-weight: 500;
+    }
+    .gantt-row-remaining {
+      font-size: 9px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    .gantt-row-remaining.warn { color: #f59e0b; }
+    .gantt-row-remaining.danger { color: #ef4444; font-weight: 700; }
+    .gantt-row-remaining.ended { color: #94a3b8; }
+    .gantt-row-actions {
+      display: flex;
+      align-items: center;
+    }
+    .gantt-row-delete {
+      background: none;
+      border: none;
+      color: #d1d5db;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 8px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+    }
+    .gantt-row-delete:hover { color: var(--error); background: rgba(239,68,68,0.08); transform: scale(1.1); }
+    .gantt-row-delete svg { width: 14px; height: 14px; }
+
+    .gantt-bar-area {
+      display: flex;
+      flex: 1;
+      position: relative;
+    }
+    .gantt-cell {
+      min-width: 38px;
+      flex: 0 0 38px;
+      border-right: 1px solid rgba(250,250,250,0.3);
+    }
+    .gantt-cell.today-col {
+      background: rgba(254, 243, 199, 0.15);
+    }
+    .gantt-bar {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 30px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      opacity: 0.9;
+    }
+    .gantt-bar:hover {
+      transform: translateY(-50%) scale(1.03);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      opacity: 1;
+    }
+    .gantt-bar-text {
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+      padding: 0 10px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+      letter-spacing: 0.02em;
+    }
+
+    .gantt-empty {
+      text-align: center;
+      color: var(--text-sub);
+      font-size: 13px;
+      padding: 40px 16px;
+      line-height: 1.8;
+    }
+    .gantt-empty-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+      opacity: 0.4;
+    }
+
+    /* モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15,23,42,0.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--glass-card-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 28px;
+      padding: 28px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--glass-border);
+      animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .modal-header h3 {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+    }
+    .modal-close {
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-sub);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .modal-close:hover { background: var(--border); color: var(--text-main); transform: scale(0.92); }
+    .modal-close svg { width: 16px; height: 16px; }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .modal-actions .btn { flex: 1; padding: 12px; font-size: 14px; }
+
+    .no-entries {
+      text-align: center;
+      color: var(--text-sub);
+      font-size: 13px;
+      padding: 24px;
+    }
+
+    .icon { width: 18px; height: 18px; }
+
+    /* コピープレビュー */
+    .copy-preview {
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 12px;
+      line-height: 1.8;
+      color: var(--text-sub);
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-bottom: 10px;
+    }
+
+    /* 削除ボタン */
+    .btn-delete-entry {
+      background: none;
+      border: none;
+      color: var(--error);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: inherit;
+    }
+    .btn-delete-entry:hover {
+      background: rgba(239,68,68,0.08);
+    }
+    .btn-delete-entry:active {
+      transform: scale(0.95);
+    }
+
+    /* トースト */
+    .toast {
+      position: fixed;
+      bottom: max(30px, env(safe-area-inset-bottom, 30px));
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(15,23,42,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: var(--radius-pill);
+      font-size: 14px;
+      font-weight: 700;
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* 設定ボタン */
+    .settings-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 1;
+    }
+    .settings-btn:active { background: rgba(255,255,255,0.3); transform: scale(0.9); }
+    .settings-btn svg { width: 20px; height: 20px; }
+
+    /* テーマ設定 */
+    .theme-section { margin-top: 8px; }
+    .theme-section label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .theme-swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 6px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-family: inherit;
+    }
+    .theme-swatch.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      box-shadow: 0 0 0 3px var(--input-focus-shadow);
+    }
+    .theme-swatch:active { transform: scale(0.95); }
+    .swatch-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    .theme-swatch span {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    @media (max-width: 500px) {
+      body { padding: 14px; }
+      .card { padding: 24px; border-radius: 20px; }
+      .app-header { padding: 22px; border-radius: 20px; }
+      .row { grid-template-columns: 1fr; gap: 14px; }
+      .result-sub-grid { grid-template-columns: 1fr; }
+      .extra-actions { grid-template-columns: 1fr; }
+      .gantt-label-col { min-width: 100px; max-width: 100px; }
+      .gantt-date-cell { min-width: 34px; flex: 0 0 34px; }
+      .gantt-cell { min-width: 34px; flex: 0 0 34px; }
+      .modal { border-radius: 24px; padding: 24px; }
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    /* ページ切り替え */
+    .page { display: none; }
+    .page.active { display: block; }
+    #pageGantt { display: none; }
+    #pageGantt.active {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    .gantt-page-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--header-grad);
+      padding: 14px 20px;
+      padding-top: max(14px, env(safe-area-inset-top));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #fff;
+      box-shadow: 0 8px 32px var(--header-shadow);
+    }
+    .gantt-back-btn {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .gantt-back-btn:active { background: rgba(255,255,255,0.3); transform: scale(0.95); }
+    .gantt-page-period {
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .gantt-page-nav {
+      display: flex;
+      gap: 6px;
+    }
+    .gantt-page-nav button {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .gantt-page-nav button:active { background: rgba(255,255,255,0.3); transform: scale(0.95); }
+    .gantt-page-body {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+    }
+    .gantt-page-body .gantt-wrapper {
+      border-radius: var(--radius);
+    }
+    .btn-gantt {
+      background: var(--btn-grad);
+      color: #fff;
+      padding: 18px;
+      border: none;
+      border-radius: var(--radius-btn);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 6px 24px var(--btn-shadow);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-family: inherit;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-gantt::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%);
+      pointer-events: none;
+    }
+    .btn-gantt:active { transform: scale(0.96); }
+
+    @media (orientation: landscape) {
+      .gantt-date-cell { min-width: 44px; flex: 0 0 44px; }
+      .gantt-cell { min-width: 44px; flex: 0 0 44px; }
+      .gantt-label-col { min-width: 130px; max-width: 130px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- PAGE: 入力 -->
+  <div class="page active" id="pageInput">
+  <div class="wrap">
+    <!-- ヘッダー -->
+    <div class="app-header">
+      <h1>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+        </svg>
+        <span id="headerDate"></span>
+      </h1>
+      <p id="headerTime"></p>
+      <button class="settings-btn" id="settingsBtn" title="設定">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- ガントチャートへ -->
+    <button class="btn btn-gantt" id="showGanttBtn">
+      <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" />
+      </svg>
+      ガントチャートを見る
+    </button>
+    <!-- 入力カード -->
+    <div class="card">
+      <div class="input-group">
+        <label for="titleInput">タイトル</label>
+        <input id="titleInput" type="text" placeholder="" />
+      </div>
+
+      <div class="row">
+        <div class="input-group">
+          <label for="startDate">処方開始日</label>
+          <input id="startDate" type="date" />
+          <div class="preset-btns">
+            <button class="preset-btn" id="setTodayBtn">今日</button>
+            <button class="preset-btn" id="setTomorrowBtn">明日</button>
+            <button class="preset-btn" id="setAsatteBtn">明後日</button>
+            <button class="preset-btn" id="setShiasatteBtn">明々後日</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="days">処方日数</label>
+          <input id="days" type="number" min="1" step="1" inputmode="numeric" placeholder="例: 28" />
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="memoInput">メモ（用法・備考など自由に記入）</label>
+        <textarea id="memoInput" placeholder=""></textarea>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="calcBtn">
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          計算する
+        </button>
+        <button class="btn btn-secondary" id="clearBtn" title="クリア">
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="extra-actions" id="extraActions" style="display:none;">
+        <button class="btn btn-success" id="registerBtn">
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          登録する
+        </button>
+        <button class="btn btn-copy" id="copyBtn">
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          コピー
+        </button>
+      </div>
+
+      <div class="warn-box" id="warnTxt" style="display:none;">
+        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <span id="warnContent"></span>
+      </div>
+
+      <div class="success-box" id="successTxt" style="display:none;">
+        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+        <span id="successContent"></span>
+      </div>
+
+      <div class="result-area" id="output">
+        <div class="result-main">
+          <div class="result-label">終了日（薬切れ日）</div>
+          <div class="result-value empty" id="endDateTxt">---</div>
+        </div>
+        <div class="result-sub-grid">
+          <div class="result-card">
+            <div class="k">今日から飲み始めたら</div>
+            <div class="v" id="fromTodayTxt">---</div>
+          </div>
+          <div class="result-card">
+            <div class="k">明日から飲み始めたら</div>
+            <div class="v" id="fromTomorrowTxt">---</div>
+          </div>
+          <div class="result-card">
+            <div class="k">明後日から飲み始めたら</div>
+            <div class="v" id="fromAsatteTxt">---</div>
+          </div>
+          <div class="result-card">
+            <div class="k">明々後日から飲み始めたら</div>
+            <div class="v" id="fromShiasatteTxt">---</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hint">
+        <b>計算ルール</b><br>
+        ・「終了日」は入力された開始日を1日目として計算します。<br>
+        ・「〜から飲み始めたら」はそれぞれの開始日を起点に終了日までが何日分になるかを計算した値です。
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" id="importBtn" style="padding:12px;font-size:13px;">
+      <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 0l3-3m-3 3l3 3m-8 4V5a2 2 0 012-2h6l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2z" />
+      </svg>
+      共有データを取り込む
+    </button>
+
+  </div>
+  </div>
+
+  <!-- PAGE: ガントチャート -->
+  <div class="page" id="pageGantt">
+    <div class="gantt-page-header">
+      <button class="gantt-back-btn" id="ganttBackBtn">&larr; 戻る</button>
+      <span class="gantt-page-period" id="ganttPeriod"></span>
+      <div class="gantt-page-nav">
+        <button id="ganttPrev">&larr;</button>
+        <button id="ganttNext">&rarr;</button>
+      </div>
+    </div>
+    <div class="gantt-page-body">
+      <div class="gantt-wrapper" id="ganttWrapper">
+        <div id="ganttContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 編集モーダル -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal" style="max-width:440px">
+      <div class="modal-header">
+        <h3>
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          編集
+        </h3>
+        <button class="modal-close" id="editModalClose">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div class="input-group">
+        <label for="editTitle">タイトル</label>
+        <input id="editTitle" type="text" />
+      </div>
+      <div class="input-group">
+        <label for="editStart">処方開始日</label>
+        <input id="editStart" type="date" />
+      </div>
+      <div class="input-group">
+        <label for="editDays">処方日数</label>
+        <input id="editDays" type="number" min="1" step="1" inputmode="numeric" />
+      </div>
+      <div class="input-group">
+        <label for="editMemo">メモ</label>
+        <textarea id="editMemo" placeholder=""></textarea>
+      </div>
+      <div class="modal-actions" style="flex-wrap:wrap;">
+        <button class="btn btn-primary" id="editSaveBtn" style="flex:1 1 100%;">
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+          保存
+        </button>
+      </div>
+      <div class="copy-preview-section" style="margin-top:16px;">
+        <label>コピー内容</label>
+        <div class="copy-preview" id="editPreview"></div>
+        <div class="modal-actions">
+          <button class="btn btn-copy" id="editCopyBtn">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            コピー
+          </button>
+          <button class="btn btn-share" id="editShareBtn">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+            共有
+          </button>
+        </div>
+      </div>
+      <div style="margin-top:16px;text-align:center;">
+        <button class="btn-delete-entry" id="editDeleteBtn">この項目を削除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定モーダル -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          設定
+        </h3>
+        <button class="modal-close" id="settingsModalClose">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div class="theme-section">
+        <label>カラーテーマ</label>
+        <div class="theme-grid" id="themeGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト -->
+  <div class="toast" id="toast"></div>
+
+<script>
+  // ==================== データ管理 ====================
+  const STORAGE_KEY = "medcal_entries";
+
+  function loadEntries() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  }
+  function saveEntries(entries) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  const ENTRY_COLORS = [
+    ["#6366f1","#818cf8"], ["#8b5cf6","#a78bfa"], ["#3b82f6","#60a5fa"],
+    ["#0891b2","#22d3ee"], ["#059669","#34d399"], ["#d97706","#fbbf24"],
+    ["#dc2626","#f87171"], ["#be185d","#f472b6"]
+  ];
+  function getEntryColor(idx) { return ENTRY_COLORS[idx % ENTRY_COLORS.length]; }
+
+  // ==================== 日付ユーティリティ ====================
+  function toNoon(date) {
+    const d = new Date(date);
+    d.setHours(12,0,0,0);
+    return d;
+  }
+  function parseDateInput(value) {
+    if (!value) return null;
+    const [y,m,day] = value.split("-").map(Number);
+    if (!y || !m || !day) return null;
+    return toNoon(new Date(y, m-1, day));
+  }
+  function formatJP(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    const week = ["日","月","火","水","木","金","土"][d.getDay()];
+    return `${y}/${m}/${day} (${week})`;
+  }
+  function formatISO(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  }
+  function addDays(date, n) {
+    const d = new Date(date);
+    d.setDate(d.getDate() + n);
+    return d;
+  }
+  function diffDaysInclusive(fromDate, toDate) {
+    const msPerDay = 24 * 60 * 60 * 1000;
+    return Math.round((toNoon(toDate) - toNoon(fromDate)) / msPerDay) + 1;
+  }
+  function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  // ==================== DOM ====================
+  const startDateEl = document.getElementById("startDate");
+  const daysEl = document.getElementById("days");
+  const titleInputEl = document.getElementById("titleInput");
+  const memoInputEl = document.getElementById("memoInput");
+  const endDateTxt = document.getElementById("endDateTxt");
+  const fromTodayTxt = document.getElementById("fromTodayTxt");
+  const fromTomorrowTxt = document.getElementById("fromTomorrowTxt");
+  const fromAsatteTxt = document.getElementById("fromAsatteTxt");
+  const fromShiasatteTxt = document.getElementById("fromShiasatteTxt");
+  const warnTxt = document.getElementById("warnTxt");
+  const warnContent = document.getElementById("warnContent");
+  const successTxt = document.getElementById("successTxt");
+  const successContent = document.getElementById("successContent");
+  const extraActions = document.getElementById("extraActions");
+  const outputArea = document.getElementById("output");
+
+  let ganttStartDate;
+  const GANTT_DAYS = 31;
+  let lastCalcStart = null, lastCalcEnd = null;
+
+  // ==================== 計算 ====================
+  function calc() {
+    warnTxt.style.display = "none";
+    successTxt.style.display = "none";
+    endDateTxt.classList.remove("empty");
+
+    const start = parseDateInput(startDateEl.value);
+    const days = Number(daysEl.value);
+
+    if (!start || !Number.isInteger(days) || days < 1) {
+      endDateTxt.textContent = "---";
+      endDateTxt.classList.add("empty");
+      fromTodayTxt.textContent = "---";
+      fromTomorrowTxt.textContent = "---";
+      fromAsatteTxt.textContent = "---";
+      fromShiasatteTxt.textContent = "---";
+      extraActions.style.display = "none";
+      lastCalcStart = null;
+      lastCalcEnd = null;
+      outputArea.classList.remove("active");
+      renderGantt();
+      if(startDateEl.value && daysEl.value) {
+        showError("開始日と有効な日数（1以上）を入力してください。");
+      }
+      return;
+    }
+
+    const end = addDays(start, days - 1);
+    lastCalcStart = start;
+    lastCalcEnd = end;
+
+    const now = new Date();
+    const today = toNoon(now);
+    const tomorrow = addDays(today, 1);
+    const asatte = addDays(today, 2);
+    const shiasatte = addDays(today, 3);
+
+    endDateTxt.textContent = formatJP(end);
+    fromTodayTxt.textContent = `${diffDaysInclusive(today, end)} 日分`;
+    fromTomorrowTxt.textContent = `${diffDaysInclusive(tomorrow, end)} 日分`;
+    fromAsatteTxt.textContent = `${diffDaysInclusive(asatte, end)} 日分`;
+    fromShiasatteTxt.textContent = `${diffDaysInclusive(shiasatte, end)} 日分`;
+
+    extraActions.style.display = "grid";
+    outputArea.classList.add("active");
+
+    if (diffDaysInclusive(today, end) <= 0) {
+      showError("終了日が過去になっています。入力日を確認してください。");
+    }
+
+    ganttStartDate = toNoon(new Date(start));
+    ganttStartDate.setDate(ganttStartDate.getDate() - 1);
+    renderGantt();
+  }
+
+  function showError(msg) {
+    warnTxt.style.display = "flex";
+    warnContent.textContent = msg;
+  }
+  function showSuccess(msg) {
+    successTxt.style.display = "flex";
+    successContent.textContent = msg;
+    setTimeout(() => { successTxt.style.display = "none"; }, 3000);
+  }
+
+  function setDateAndCalc(offset) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    startDateEl.value = formatISO(d);
+    calc();
+  }
+
+  // ==================== カレンダー登録 ====================
+  function registerToCalendar() {
+    if (!lastCalcStart || !lastCalcEnd) return;
+    const entries = loadEntries();
+    const titleText = titleInputEl.value.trim();
+    const memoText = memoInputEl.value.trim();
+    const displayName = titleText || "（タイトルなし）";
+    entries.push({
+      id: Date.now(),
+      name: displayName,
+      start: formatISO(lastCalcStart),
+      end: formatISO(lastCalcEnd),
+      days: Number(daysEl.value),
+      memo: memoText,
+      createdAt: new Date().toISOString()
+    });
+    saveEntries(entries);
+    showToast("登録しました");
+    renderGantt();
+    showPage('gantt');
+  }
+
+  // ==================== 内容コピー ====================
+  function copyContent() {
+    if (!lastCalcStart || !lastCalcEnd) return;
+    const title = titleInputEl.value.trim();
+    const memo = memoInputEl.value.trim();
+    const today = toNoon(new Date());
+    let text = `【処方情報】\n`;
+    if (title) text += `タイトル: ${title}\n`;
+    text += `処方開始日: ${formatJP(lastCalcStart)}\n`;
+    text += `終了日（薬切れ日）: ${formatJP(lastCalcEnd)}\n`;
+    text += `処方日数: ${daysEl.value}日分\n`;
+    text += `今日からの残日数: ${diffDaysInclusive(today, lastCalcEnd)}日分\n`;
+    if (memo) text += `メモ: ${memo}\n`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("コピーしました");
+    }).catch(() => {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showToast("コピーしました");
+    });
+  }
+
+  // ==================== トースト ====================
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.add("show");
+    setTimeout(() => { toast.classList.remove("show"); }, 2500);
+  }
+
+  // ==================== ページ切り替え ====================
+  function showPage(page) {
+    document.getElementById('pageInput').classList.toggle('active', page === 'input');
+    document.getElementById('pageGantt').classList.toggle('active', page === 'gantt');
+    if (page === 'gantt') {
+      renderGantt();
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function getCellWidth() {
+    if (window.matchMedia("(orientation: landscape)").matches) return 44;
+    return window.innerWidth <= 500 ? 32 : 38;
+  }
+
+  // ==================== ガントチャート ====================
+  function renderGantt() {
+    const entries = loadEntries();
+    const today = toNoon(new Date());
+    const container = document.getElementById("ganttContent");
+    const cellW = getCellWidth();
+
+    const ganttEnd = addDays(ganttStartDate, GANTT_DAYS - 1);
+    const startM = ganttStartDate.getMonth() + 1;
+    const endM = ganttEnd.getMonth() + 1;
+    const periodText = startM === endM
+      ? `${ganttStartDate.getFullYear()}年${startM}月`
+      : `${startM}/${ganttStartDate.getDate()} 〜 ${endM}/${ganttEnd.getDate()}`;
+    document.getElementById("ganttPeriod").textContent = periodText;
+
+    // 表示エントリ
+    const displayEntries = [...entries];
+    if (lastCalcStart && lastCalcEnd) {
+      const alreadyRegistered = entries.some(e =>
+        e.start === formatISO(lastCalcStart) && e.end === formatISO(lastCalcEnd)
+      );
+      if (!alreadyRegistered) {
+        displayEntries.push({
+          id: -1,
+          name: titleInputEl.value.trim() || "（計算中）",
+          start: formatISO(lastCalcStart),
+          end: formatISO(lastCalcEnd),
+          days: diffDaysInclusive(lastCalcStart, lastCalcEnd),
+          memo: memoInputEl.value.trim(),
+          _preview: true
+        });
+      }
+    }
+
+    if (displayEntries.length === 0) {
+      container.innerHTML = `<div class="gantt-empty"><div class="gantt-empty-icon"><svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="#cbd5e1" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg></div>登録された項目はありません<br>上で計算して登録してください</div>`;
+      return;
+    }
+
+    const dowNames = ["日","月","火","水","木","金","土"];
+
+    // ヘッダー
+    let html = `<div class="gantt-dates"><div class="gantt-label-col">項目</div>`;
+    for (let i = 0; i < GANTT_DAYS; i++) {
+      const d = addDays(ganttStartDate, i);
+      const dow = d.getDay();
+      let cls = "gantt-date-cell";
+      if (dow === 0) cls += " sun";
+      if (dow === 6) cls += " sat";
+      if (sameDay(d, today)) cls += " today";
+      html += `<div class="${cls}"><div class="gantt-dow">${dowNames[dow]}</div><div class="gantt-day">${d.getDate()}</div></div>`;
+    }
+    html += `</div>`;
+
+    // 行
+    const msPerDay = 24 * 60 * 60 * 1000;
+    displayEntries.forEach((entry, idx) => {
+      const [c1, c2] = entry._preview ? ["#94a3b8","#cbd5e1"] : getEntryColor(idx);
+      const eStart = toNoon(new Date(entry.start));
+      const eEnd = toNoon(new Date(entry.end));
+
+      const tag = entry._preview ? `<span style="font-size:9px;color:#94a3b8;font-weight:500"> (未登録)</span>` : "";
+
+      // 残日数計算
+      const remaining = diffDaysInclusive(today, eEnd);
+      let remainText = "";
+      let remainCls = "gantt-row-remaining";
+      if (remaining <= 0) {
+        remainText = "（終了）";
+        remainCls += " ended";
+      } else if (remaining <= 3) {
+        remainText = `（切れ日まで残${remaining}日）`;
+        remainCls += " danger";
+      } else if (remaining <= 7) {
+        remainText = `（切れ日まで残${remaining}日）`;
+        remainCls += " warn";
+      } else {
+        remainText = `（切れ日まで残${remaining}日）`;
+      }
+
+      html += `<div class="gantt-row">`;
+      html += `<div class="gantt-row-label">
+        <div class="gantt-row-color" style="background:linear-gradient(180deg,${c1},${c2})"></div>
+        <div class="gantt-row-info">
+          <div class="gantt-row-name" title="${escapeHtml(entry.name)}" ${entry._preview ? '' : `onclick="showEntryDetail(${entry.id})" style="cursor:pointer"`}>${escapeHtml(entry.name)}${tag}</div>
+          <div class="gantt-row-days">${entry.days}日分 <span class="${remainCls}">${remainText}</span></div>
+        </div></div>`;
+
+      html += `<div class="gantt-bar-area">`;
+      for (let i = 0; i < GANTT_DAYS; i++) {
+        const d = addDays(ganttStartDate, i);
+        html += `<div class="gantt-cell${sameDay(d, today) ? " today-col" : ""}"></div>`;
+      }
+
+      const barStartIdx = Math.max(0, Math.round((eStart - ganttStartDate) / msPerDay));
+      const barEndIdx = Math.min(GANTT_DAYS - 1, Math.round((eEnd - ganttStartDate) / msPerDay));
+
+      if (barEndIdx >= 0 && barStartIdx < GANTT_DAYS) {
+        const left = barStartIdx * cellW;
+        const width = (barEndIdx - barStartIdx + 1) * cellW;
+        const barLabel = width > 55 ? `<span class="gantt-bar-text">${entry.days}日</span>` : "";
+        const extra = entry._preview ? "opacity:0.55;border:2px dashed #94a3b8;" : "";
+        html += `<div class="gantt-bar" style="left:${left}px;width:${width}px;background:linear-gradient(135deg,${c1},${c2});${extra}" onclick="showEntryDetail(${entry.id})">${barLabel}</div>`;
+      }
+
+      html += `</div></div>`;
+    });
+
+    container.innerHTML = html;
+  }
+
+  let editingEntryId = null;
+
+  function updateEditPreview(entry) {
+    const startD = new Date(entry.start + "T12:00:00");
+    const endD = new Date(entry.end + "T12:00:00");
+    const today = toNoon(new Date());
+    const remaining = diffDaysInclusive(today, endD);
+    const remainStr = remaining <= 0 ? "終了" : `切れ日まで残${remaining}日`;
+    let text = `【お薬カレンダー】\n`;
+    text += `[タイトル] ${entry.name}\n`;
+    text += `[期間] ${formatJP(startD)} 〜 ${formatJP(endD)}\n`;
+    text += `[日数] ${entry.days}日分（${remainStr}）`;
+    if (entry.memo) text += `\n[メモ] ${entry.memo}`;
+    document.getElementById("editPreview").textContent = text;
+  }
+
+  function showEntryDetail(id) {
+    if (id === -1) return;
+    const entry = loadEntries().find(e => e.id === id);
+    if (!entry) return;
+    editingEntryId = id;
+    document.getElementById("editTitle").value = entry.name || "";
+    document.getElementById("editStart").value = entry.start;
+    document.getElementById("editDays").value = entry.days;
+    document.getElementById("editMemo").value = entry.memo || "";
+    updateEditPreview(entry);
+    document.getElementById("editModal").classList.add("active");
+  }
+
+  function saveEditEntry() {
+    if (editingEntryId === null) return;
+    const entries = loadEntries();
+    const idx = entries.findIndex(e => e.id === editingEntryId);
+    if (idx === -1) return;
+    const title = document.getElementById("editTitle").value.trim();
+    const startVal = document.getElementById("editStart").value;
+    const daysVal = Number(document.getElementById("editDays").value);
+    const memo = document.getElementById("editMemo").value.trim();
+    if (!startVal || !daysVal || daysVal < 1) {
+      showToast("開始日と日数を入力してください");
+      return;
+    }
+    const start = parseDateInput(startVal);
+    const end = addDays(start, daysVal - 1);
+    entries[idx].name = title || "（タイトルなし）";
+    entries[idx].start = formatISO(start);
+    entries[idx].end = formatISO(end);
+    entries[idx].days = daysVal;
+    entries[idx].memo = memo;
+    saveEntries(entries);
+    closeEditModal();
+    renderGantt();
+    showToast("保存しました");
+  }
+
+  function shareEntry() {
+    if (editingEntryId === null) return;
+    const entry = loadEntries().find(e => e.id === editingEntryId);
+    if (!entry) return;
+    const startD = new Date(entry.start + "T12:00:00");
+    const endD = new Date(entry.end + "T12:00:00");
+    const today = toNoon(new Date());
+    const remaining = diffDaysInclusive(today, endD);
+    const remainStr = remaining <= 0 ? "終了" : `切れ日まで残${remaining}日`;
+
+    // 共有用テキスト
+    let text = `【お薬カレンダー】\n`;
+    text += `[タイトル] ${entry.name}\n`;
+    text += `[期間] ${formatJP(startD)} 〜 ${formatJP(endD)}\n`;
+    text += `[日数] ${entry.days}日分（${remainStr}）\n`;
+    if (entry.memo) text += `[メモ] ${entry.memo}\n`;
+    text += `\n`;
+
+    // インポート用データ（Base64エンコード）
+    const shareData = {
+      t: entry.name,
+      s: entry.start,
+      d: entry.days,
+      m: entry.memo || ""
+    };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(shareData))));
+    text += `取り込み用: calday://import?data=${encoded}`;
+
+    if (navigator.share) {
+      navigator.share({ text: text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("コピーしました");
+      }).catch(() => {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.cssText = "position:fixed;opacity:0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showToast("コピーしました");
+      });
+    }
+  }
+
+  function copyEntryToClipboard() {
+    if (editingEntryId === null) return;
+    const entry = loadEntries().find(e => e.id === editingEntryId);
+    if (!entry) return;
+    const startD = new Date(entry.start + "T12:00:00");
+    const endD = new Date(entry.end + "T12:00:00");
+    const today = toNoon(new Date());
+    const remaining = diffDaysInclusive(today, endD);
+    const remainStr = remaining <= 0 ? "終了" : `切れ日まで残${remaining}日`;
+
+    let text = `【お薬カレンダー】\n`;
+    text += `[タイトル] ${entry.name}\n`;
+    text += `[期間] ${formatJP(startD)} 〜 ${formatJP(endD)}\n`;
+    text += `[日数] ${entry.days}日分（${remainStr}）\n`;
+    if (entry.memo) text += `[メモ] ${entry.memo}\n`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("コピーしました");
+    }).catch(() => {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showToast("コピーしました");
+    });
+  }
+
+  // 共有データをインポート（共通処理）
+  function importCalDayData(encodedData) {
+    try {
+      const json = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
+      const start = parseDateInput(json.s);
+      if (!start || !json.d) {
+        showToast("データ形式が不正です");
+        return false;
+      }
+      const end = addDays(start, json.d - 1);
+      const entries = loadEntries();
+      entries.push({
+        id: Date.now(),
+        name: json.t || "（共有データ）",
+        start: json.s,
+        end: formatISO(end),
+        days: json.d,
+        memo: json.m || "",
+        createdAt: new Date().toISOString()
+      });
+      saveEntries(entries);
+      renderGantt();
+      const displayName = json.t || "（共有データ）";
+      showToast(`「${displayName}」がガントチャートに追加されました`);
+      showPage('gantt');
+      return true;
+    } catch(e) {
+      showToast("データの取り込みに失敗しました");
+      return false;
+    }
+  }
+
+  // URLスキームからインポート（Swift側から呼ばれる）
+  window.importFromURL = function(encodedData) {
+    importCalDayData(encodedData);
+  };
+
+  // クリップボードからインポート
+  async function importFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      // URLスキーム形式: calday://import?data=...
+      const urlMatch = text.match(/calday:\/\/import\?data=([A-Za-z0-9+/=]+)/);
+      // レガシー形式: #CALDAY:...#
+      const legacyMatch = text.match(/#CALDAY:([A-Za-z0-9+/=]+)#/);
+      const match = urlMatch || legacyMatch;
+      if (!match) {
+        showToast("取り込みデータが見つかりません");
+        return;
+      }
+      importCalDayData(match[1]);
+    } catch(e) {
+      showToast("クリップボードの読み取りに失敗しました");
+    }
+  }
+
+  // ==================== 編集モーダル ====================
+  function closeEditModal() {
+    document.getElementById("editModal").classList.remove("active");
+    editingEntryId = null;
+  }
+  document.getElementById("editModalClose").addEventListener("click", closeEditModal);
+  document.getElementById("editSaveBtn").addEventListener("click", saveEditEntry);
+  document.getElementById("editCopyBtn").addEventListener("click", copyEntryToClipboard);
+  document.getElementById("editShareBtn").addEventListener("click", shareEntry);
+  document.getElementById("editDeleteBtn").addEventListener("click", () => {
+    if (editingEntryId === null) return;
+    if (confirm("この項目を削除しますか？")) {
+      deleteEntry(editingEntryId);
+      closeEditModal();
+    }
+  });
+  document.getElementById("editModal").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeEditModal();
+  });
+
+  // ==================== エントリ削除 ====================
+  function deleteEntry(id) {
+    saveEntries(loadEntries().filter(e => e.id !== id));
+    renderGantt();
+    showToast("削除しました");
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ==================== イベント ====================
+  document.getElementById("calcBtn").addEventListener("click", calc);
+  document.getElementById("registerBtn").addEventListener("click", registerToCalendar);
+  document.getElementById("copyBtn").addEventListener("click", copyContent);
+
+  document.getElementById("setTodayBtn").addEventListener("click", (e) => { e.preventDefault(); setDateAndCalc(0); });
+  document.getElementById("setTomorrowBtn").addEventListener("click", (e) => { e.preventDefault(); setDateAndCalc(1); });
+  document.getElementById("setAsatteBtn").addEventListener("click", (e) => { e.preventDefault(); setDateAndCalc(2); });
+  document.getElementById("setShiasatteBtn").addEventListener("click", (e) => { e.preventDefault(); setDateAndCalc(3); });
+
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    startDateEl.value = "";
+    daysEl.value = "";
+    titleInputEl.value = "";
+    memoInputEl.value = "";
+    endDateTxt.textContent = "---";
+    endDateTxt.classList.add("empty");
+    fromTodayTxt.textContent = "---";
+    fromTomorrowTxt.textContent = "---";
+    fromAsatteTxt.textContent = "---";
+    fromShiasatteTxt.textContent = "---";
+    warnTxt.style.display = "none";
+    successTxt.style.display = "none";
+    extraActions.style.display = "none";
+    outputArea.classList.remove("active");
+    lastCalcStart = null;
+    lastCalcEnd = null;
+    renderGantt();
+  });
+
+  startDateEl.addEventListener("change", calc);
+  daysEl.addEventListener("input", calc);
+
+  document.getElementById("showGanttBtn").addEventListener("click", () => showPage('gantt'));
+  document.getElementById("importBtn").addEventListener("click", importFromClipboard);
+  document.getElementById("ganttBackBtn").addEventListener("click", () => showPage('input'));
+
+  document.getElementById("ganttPrev").addEventListener("click", () => {
+    ganttStartDate = addDays(ganttStartDate, -14);
+    renderGantt();
+  });
+  document.getElementById("ganttNext").addEventListener("click", () => {
+    ganttStartDate = addDays(ganttStartDate, 14);
+    renderGantt();
+  });
+
+  window.addEventListener('resize', () => {
+    if (document.getElementById('pageGantt').classList.contains('active')) renderGantt();
+  });
+
+  // ==================== テーマ設定 ====================
+  const THEME_KEY = "medcal_theme";
+  const THEMES = {
+    default: {
+      name: 'デフォルト',
+      swatch: 'linear-gradient(145deg, #6366f1, #818cf8)',
+      vars: {
+        '--primary': '#6366f1', '--primary-hover': '#4f46e5', '--primary-light': '#eef2ff',
+        '--bg': '#f5f7fb', '--card-bg': 'rgba(255,255,255,0.72)', '--text-main': '#0f172a', '--text-sub': '#64748b',
+        '--border': 'rgba(226,232,240,0.6)',
+        '--header-grad': 'linear-gradient(145deg, #6366f1 0%, #818cf8 60%, #a5b4fc 100%)',
+        '--header-shadow': 'rgba(99, 102, 241, 0.2)',
+        '--btn-grad': 'linear-gradient(145deg, #6366f1, #818cf8)',
+        '--btn-shadow': 'rgba(99, 102, 241, 0.25)',
+        '--input-focus-shadow': 'rgba(99, 102, 241, 0.12)',
+        '--result-grad': 'linear-gradient(145deg, rgba(238,242,255,0.8), rgba(224,231,255,0.6))',
+        '--surface-alt': '#f1f5f9', '--row-hover': 'rgba(238,242,255,0.5)',
+        '--glass-bg': 'rgba(255,255,255,0.55)', '--glass-border': 'rgba(255,255,255,0.3)', '--glass-card-bg': 'rgba(255,255,255,0.65)',
+      }
+    },
+    black: {
+      name: 'ブラック',
+      swatch: 'linear-gradient(145deg, #1e1b4b, #3730a3)',
+      vars: {
+        '--primary': '#818cf8', '--primary-hover': '#a5b4fc', '--primary-light': '#1e1b4b',
+        '--bg': '#0c0c14', '--card-bg': 'rgba(24,24,42,0.72)', '--text-main': '#e2e8f0', '--text-sub': '#94a3b8',
+        '--border': 'rgba(42,42,64,0.6)',
+        '--header-grad': 'linear-gradient(145deg, #1e1b4b 0%, #312e81 60%, #3730a3 100%)',
+        '--header-shadow': 'rgba(30, 27, 75, 0.4)',
+        '--btn-grad': 'linear-gradient(145deg, #4f46e5, #6366f1)',
+        '--btn-shadow': 'rgba(99, 102, 241, 0.25)',
+        '--input-focus-shadow': 'rgba(129, 140, 248, 0.2)',
+        '--result-grad': 'linear-gradient(145deg, rgba(30,27,75,0.8), rgba(49,46,129,0.6))',
+        '--surface-alt': '#1e1e30', '--row-hover': 'rgba(30,30,48,0.5)',
+        '--glass-bg': 'rgba(24,24,42,0.55)', '--glass-border': 'rgba(255,255,255,0.06)', '--glass-card-bg': 'rgba(24,24,42,0.65)',
+      }
+    },
+    beige: {
+      name: 'ベージュ',
+      swatch: 'linear-gradient(145deg, #92734e, #bfa48a)',
+      vars: {
+        '--primary': '#92734e', '--primary-hover': '#7c5e3a', '--primary-light': '#f5f0e8',
+        '--bg': '#faf6f0', '--card-bg': 'rgba(255,255,255,0.72)', '--text-main': '#3d3225', '--text-sub': '#7a6b5a',
+        '--border': 'rgba(224,213,197,0.6)',
+        '--header-grad': 'linear-gradient(145deg, #92734e 0%, #a8896a 60%, #bfa48a 100%)',
+        '--header-shadow': 'rgba(146, 115, 78, 0.2)',
+        '--btn-grad': 'linear-gradient(145deg, #92734e, #a8896a)',
+        '--btn-shadow': 'rgba(146, 115, 78, 0.25)',
+        '--input-focus-shadow': 'rgba(146, 115, 78, 0.12)',
+        '--result-grad': 'linear-gradient(145deg, rgba(245,240,232,0.8), rgba(237,229,216,0.6))',
+        '--surface-alt': '#f0ebe3', '--row-hover': 'rgba(245,240,232,0.5)',
+        '--glass-bg': 'rgba(255,253,248,0.55)', '--glass-border': 'rgba(255,255,255,0.3)', '--glass-card-bg': 'rgba(255,253,248,0.65)',
+      }
+    },
+    turquoise: {
+      name: 'ターコイズ',
+      swatch: 'linear-gradient(145deg, #0891b2, #22d3ee)',
+      vars: {
+        '--primary': '#0891b2', '--primary-hover': '#0e7490', '--primary-light': '#ecfeff',
+        '--bg': '#f0fdfa', '--card-bg': 'rgba(255,255,255,0.72)', '--text-main': '#134e4a', '--text-sub': '#4d7c7f',
+        '--border': 'rgba(167,243,208,0.6)',
+        '--header-grad': 'linear-gradient(145deg, #0891b2 0%, #06b6d4 60%, #22d3ee 100%)',
+        '--header-shadow': 'rgba(8, 145, 178, 0.2)',
+        '--btn-grad': 'linear-gradient(145deg, #0891b2, #06b6d4)',
+        '--btn-shadow': 'rgba(8, 145, 178, 0.25)',
+        '--input-focus-shadow': 'rgba(8, 145, 178, 0.12)',
+        '--result-grad': 'linear-gradient(145deg, rgba(236,254,255,0.8), rgba(207,250,254,0.6))',
+        '--surface-alt': '#e0f7fa', '--row-hover': 'rgba(236,254,255,0.5)',
+        '--glass-bg': 'rgba(240,253,250,0.55)', '--glass-border': 'rgba(255,255,255,0.3)', '--glass-card-bg': 'rgba(240,253,250,0.65)',
+      }
+    },
+    orange: {
+      name: 'オレンジ',
+      swatch: 'linear-gradient(145deg, #ea580c, #fb923c)',
+      vars: {
+        '--primary': '#ea580c', '--primary-hover': '#c2410c', '--primary-light': '#fff7ed',
+        '--bg': '#fffbf5', '--card-bg': 'rgba(255,255,255,0.72)', '--text-main': '#431407', '--text-sub': '#92604a',
+        '--border': 'rgba(254,215,170,0.6)',
+        '--header-grad': 'linear-gradient(145deg, #ea580c 0%, #f97316 60%, #fb923c 100%)',
+        '--header-shadow': 'rgba(234, 88, 12, 0.2)',
+        '--btn-grad': 'linear-gradient(145deg, #ea580c, #f97316)',
+        '--btn-shadow': 'rgba(234, 88, 12, 0.25)',
+        '--input-focus-shadow': 'rgba(234, 88, 12, 0.12)',
+        '--result-grad': 'linear-gradient(145deg, rgba(255,247,237,0.8), rgba(255,237,213,0.6))',
+        '--surface-alt': '#fff1e0', '--row-hover': 'rgba(255,247,237,0.5)',
+        '--glass-bg': 'rgba(255,251,245,0.55)', '--glass-border': 'rgba(255,255,255,0.3)', '--glass-card-bg': 'rgba(255,251,245,0.65)',
+      }
+    },
+    pink: {
+      name: 'ピンク',
+      swatch: 'linear-gradient(145deg, #db2777, #f472b6)',
+      vars: {
+        '--primary': '#db2777', '--primary-hover': '#be185d', '--primary-light': '#fdf2f8',
+        '--bg': '#fef7fb', '--card-bg': 'rgba(255,255,255,0.72)', '--text-main': '#500724', '--text-sub': '#8b5670',
+        '--border': 'rgba(251,207,232,0.6)',
+        '--header-grad': 'linear-gradient(145deg, #db2777 0%, #ec4899 60%, #f472b6 100%)',
+        '--header-shadow': 'rgba(219, 39, 119, 0.2)',
+        '--btn-grad': 'linear-gradient(145deg, #db2777, #ec4899)',
+        '--btn-shadow': 'rgba(219, 39, 119, 0.25)',
+        '--input-focus-shadow': 'rgba(219, 39, 119, 0.12)',
+        '--result-grad': 'linear-gradient(145deg, rgba(253,242,248,0.8), rgba(252,231,243,0.6))',
+        '--surface-alt': '#fce7f3', '--row-hover': 'rgba(253,242,248,0.5)',
+        '--glass-bg': 'rgba(254,247,251,0.55)', '--glass-border': 'rgba(255,255,255,0.3)', '--glass-card-bg': 'rgba(254,247,251,0.65)',
+      }
+    },
+    brown: {
+      name: 'ブラウン',
+      swatch: 'linear-gradient(145deg, #92400e, #d97706)',
+      vars: {
+        '--primary': '#92400e', '--primary-hover': '#78350f', '--primary-light': '#fef3c7',
+        '--bg': '#fffbeb', '--card-bg': 'rgba(255,255,255,0.72)', '--text-main': '#451a03', '--text-sub': '#7a5c2e',
+        '--border': 'rgba(253,230,138,0.6)',
+        '--header-grad': 'linear-gradient(145deg, #92400e 0%, #b45309 60%, #d97706 100%)',
+        '--header-shadow': 'rgba(146, 64, 14, 0.2)',
+        '--btn-grad': 'linear-gradient(145deg, #92400e, #b45309)',
+        '--btn-shadow': 'rgba(146, 64, 14, 0.25)',
+        '--input-focus-shadow': 'rgba(146, 64, 14, 0.12)',
+        '--result-grad': 'linear-gradient(145deg, rgba(254,243,199,0.8), rgba(253,230,138,0.6))',
+        '--surface-alt': '#fef3c7', '--row-hover': 'rgba(254,243,199,0.5)',
+        '--glass-bg': 'rgba(255,251,235,0.55)', '--glass-border': 'rgba(255,255,255,0.3)', '--glass-card-bg': 'rgba(255,251,235,0.65)',
+      }
+    }
+  };
+
+  function applyTheme(themeKey) {
+    const theme = THEMES[themeKey];
+    if (!theme) return;
+    const root = document.documentElement;
+    Object.entries(theme.vars).forEach(([prop, val]) => {
+      root.style.setProperty(prop, val);
+    });
+    localStorage.setItem(THEME_KEY, themeKey);
+    // アクティブ状態を更新
+    document.querySelectorAll('.theme-swatch').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.theme === themeKey);
+    });
+  }
+
+  function buildThemeGrid() {
+    const grid = document.getElementById('themeGrid');
+    const current = localStorage.getItem(THEME_KEY) || 'default';
+    grid.innerHTML = Object.entries(THEMES).map(([key, t]) =>
+      `<button class="theme-swatch${key === current ? ' active' : ''}" data-theme="${key}">
+        <div class="swatch-circle" style="background:${t.swatch}"></div>
+        <span>${t.name}</span>
+      </button>`
+    ).join('');
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.theme-swatch');
+      if (!btn) return;
+      applyTheme(btn.dataset.theme);
+    });
+  }
+
+  // 設定モーダル
+  document.getElementById('settingsBtn').addEventListener('click', () => {
+    buildThemeGrid();
+    document.getElementById('settingsModal').classList.add('active');
+  });
+  document.getElementById('settingsModalClose').addEventListener('click', () => {
+    document.getElementById('settingsModal').classList.remove('active');
+  });
+  document.getElementById('settingsModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) document.getElementById('settingsModal').classList.remove('active');
+  });
+
+  // 保存済みテーマを復元
+  (function() {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved && THEMES[saved]) applyTheme(saved);
+  })();
+
+  // ==================== ヘッダー時計 ====================
+  function updateHeaderClock() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const d = now.getDate();
+    const week = ["日","月","火","水","木","金","土"][now.getDay()];
+    document.getElementById("headerDate").textContent = `${y}/${m}/${d}（${week}）`;
+    const hh = String(now.getHours()).padStart(2,"0");
+    const mm = String(now.getMinutes()).padStart(2,"0");
+    const ss = String(now.getSeconds()).padStart(2,"0");
+    document.getElementById("headerTime").textContent = `${hh}:${mm}:${ss}`;
+  }
+  updateHeaderClock();
+  setInterval(updateHeaderClock, 1000);
+
+  // ==================== 初期化 ====================
+  ganttStartDate = toNoon(new Date());
+  ganttStartDate.setDate(ganttStartDate.getDate() - 3);
+  renderGantt();
+</script>
+</body>
+</html>

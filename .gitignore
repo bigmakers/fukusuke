@@ -1,0 +1,28 @@
+# Xcode
+CalDay/CalDay.xcodeproj/project.xcworkspace/
+CalDay/CalDay.xcodeproj/xcuserdata/
+CalDay/CalDay.xcodeproj/xcshareddata/
+CalDay/build/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Claude
+.claude/
+
+# Misc
+*.swp
+*.swo
+*~
