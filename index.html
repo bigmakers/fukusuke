@@ -1209,6 +1209,22 @@
         <div class="theme-grid" id="themeGrid"></div>
       </div>
       <div class="theme-section" style="margin-top:20px;">
+        <label>自動削除</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:13px;color:var(--text-main);">最終日から</span>
+          <select id="autoPurgeDays" style="flex:0 0 auto;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--glass-card-bg);color:var(--text-main);font-size:14px;font-weight:600;">
+            <option value="0">削除しない</option>
+            <option value="3">3日</option>
+            <option value="7">7日</option>
+            <option value="10">10日</option>
+            <option value="14">14日</option>
+            <option value="30">30日</option>
+          </select>
+          <span style="font-size:13px;color:var(--text-main);">後に削除</span>
+        </div>
+        <p style="font-size:11px;color:var(--text-sub);margin-top:8px;">終了日を過ぎたデータを自動で削除します</p>
+      </div>
+      <div class="theme-section" style="margin-top:20px;">
         <label>現在のプラン</label>
         <div id="planInfo" style="padding:12px 0;font-size:14px;color:var(--text-sub);"></div>
         <button class="btn" id="upgradeBtn" style="width:100%;margin-top:4px;">プランをアップグレード</button>
@@ -1299,6 +1315,20 @@
   function showUpgradeModal() {
     document.getElementById("upgradeModal").classList.add("active");
   }
+
+  // ==================== 自動削除設定 ====================
+  const PURGE_DAYS_KEY = "medcal_purge_days";
+  function getPurgeDays() {
+    const v = localStorage.getItem(PURGE_DAYS_KEY);
+    return v !== null ? parseInt(v, 10) : 10;
+  }
+  function setPurgeDays(days) {
+    localStorage.setItem(PURGE_DAYS_KEY, days);
+  }
+  document.getElementById('autoPurgeDays').value = getPurgeDays();
+  document.getElementById('autoPurgeDays').addEventListener('change', (e) => {
+    setPurgeDays(parseInt(e.target.value, 10));
+  });
 
   // ==================== データ管理 ====================
   const STORAGE_KEY = "medcal_entries";
@@ -1524,7 +1554,20 @@
   }
 
   // ==================== ガントチャート ====================
+  function purgeExpiredEntries() {
+    const days = getPurgeDays();
+    if (days <= 0) return;
+    const entries = loadEntries();
+    const today = toNoon(new Date());
+    const filtered = entries.filter(e => {
+      const end = toNoon(new Date(e.end));
+      return (today - end) / (24 * 60 * 60 * 1000) <= days;
+    });
+    if (filtered.length < entries.length) saveEntries(filtered);
+  }
+
   function renderGantt() {
+    purgeExpiredEntries();
     const entries = loadEntries();
     const today = toNoon(new Date());
     const container = document.getElementById("ganttContent");
