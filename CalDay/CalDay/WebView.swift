@@ -45,10 +45,62 @@ class WebViewModel: ObservableObject {
     }
 }
 
-// MARK: - StoreKit メッセージハンドラ
-class StoreMessageHandler: NSObject, WKScriptMessageHandler {
+// MARK: - Coordinator (Navigation + UI + Store)
+class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
     weak var viewModel: WebViewModel?
 
+    // MARK: - WKUIDelegate: alert()
+    func webView(_ webView: WKWebView,
+                 runJavaScriptAlertPanelWithMessage message: String,
+                 initiatedByFrame frame: WKFrameInfo,
+                 completionHandler: @escaping () -> Void) {
+        let ac = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler() })
+        topViewController()?.present(ac, animated: true)
+    }
+
+    // MARK: - WKUIDelegate: confirm()
+    func webView(_ webView: WKWebView,
+                 runJavaScriptConfirmPanelWithMessage message: String,
+                 initiatedByFrame frame: WKFrameInfo,
+                 completionHandler: @escaping (Bool) -> Void) {
+        let ac = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "キャンセル", style: .cancel) { _ in completionHandler(false) })
+        ac.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(true) })
+        topViewController()?.present(ac, animated: true)
+    }
+
+    // MARK: - WKUIDelegate: prompt()
+    func webView(_ webView: WKWebView,
+                 runJavaScriptTextInputPanelWithPrompt prompt: String,
+                 defaultText: String?,
+                 initiatedByFrame frame: WKFrameInfo,
+                 completionHandler: @escaping (String?) -> Void) {
+        let ac = UIAlertController(title: nil, message: prompt, preferredStyle: .alert)
+        ac.addTextField { tf in tf.text = defaultText }
+        ac.addAction(UIAlertAction(title: "キャンセル", style: .cancel) { _ in completionHandler(nil) })
+        ac.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+            completionHandler(ac.textFields?.first?.text)
+        })
+        topViewController()?.present(ac, animated: true)
+    }
+
+    private func topViewController() -> UIViewController? {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first(where: { $0.isKeyWindow }) else { return nil }
+        var vc = window.rootViewController
+        while let presented = vc?.presentedViewController {
+            vc = presented
+        }
+        return vc
+    }
+
+    // MARK: - WKNavigationDelegate: ページロード完了
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        viewModel?.syncCurrentPlan()
+    }
+
+    // MARK: - WKScriptMessageHandler: StoreKit連携
     func userContentController(_ userContentController: WKUserContentController,
                                didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: String],
@@ -107,10 +159,10 @@ class StoreMessageHandler: NSObject, WKScriptMessageHandler {
 struct WebView: UIViewRepresentable {
     @ObservedObject var viewModel: WebViewModel
 
-    func makeCoordinator() -> StoreMessageHandler {
-        let handler = StoreMessageHandler()
-        handler.viewModel = viewModel
-        return handler
+    func makeCoordinator() -> WebViewCoordinator {
+        let coordinator = WebViewCoordinator()
+        coordinator.viewModel = viewModel
+        return coordinator
     }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -126,6 +178,7 @@ struct WebView: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = .systemBackground
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
 
         if let url = Bundle.main.url(forResource: "index", withExtension: "html") {
             webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
@@ -136,11 +189,4 @@ struct WebView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: WKWebView, context: Context) {}
-}
-
-// MARK: - ページロード完了後にプラン同期
-extension StoreMessageHandler: WKNavigationDelegate {
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        viewModel?.syncCurrentPlan()
-    }
 }

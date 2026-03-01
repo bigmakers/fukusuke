@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>福助 - 服薬スケジュール</title>
@@ -41,7 +41,8 @@
       --glass-border: rgba(255,255,255,0.3);
       --glass-card-bg: rgba(255,255,255,0.65);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }
+    html { touch-action: manipulation; }
     body {
       font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
@@ -370,13 +371,14 @@
     .gantt-nav button:hover { background: var(--primary); color: #fff; transform: scale(0.96); }
 
     .gantt-wrapper {
-      overflow-x: auto;
+      overflow: auto;
       -webkit-overflow-scrolling: touch;
       border: 1px solid var(--glass-border);
       border-radius: var(--radius);
       background: var(--glass-card-bg);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
+      max-height: 70vh;
     }
     .gantt-wrapper::-webkit-scrollbar { height: 6px; }
     .gantt-wrapper::-webkit-scrollbar-track { background: var(--surface-alt); border-radius: 3px; }
@@ -407,6 +409,12 @@
       align-items: center;
       text-transform: uppercase;
       letter-spacing: 0.06em;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: rgba(248,250,252,0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
     .gantt-date-cell {
       min-width: 38px;
@@ -456,6 +464,12 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: var(--glass-card-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
     .gantt-row-color {
       width: 4px;
@@ -1571,21 +1585,24 @@
 
       const tag = entry._preview ? `<span style="font-size:9px;color:#94a3b8;font-weight:500"> (未登録)</span>` : "";
 
-      // 残日数計算
+      // 残日数 & 切れ日表示
       const remaining = diffDaysInclusive(today, eEnd);
+      const endMonth = eEnd.getMonth() + 1;
+      const endDay = eEnd.getDate();
+      const endDateStr = `${endMonth}/${endDay}`;
       let remainText = "";
       let remainCls = "gantt-row-remaining";
       if (remaining <= 0) {
         remainText = "（終了）";
         remainCls += " ended";
       } else if (remaining <= 3) {
-        remainText = `（切れ日まで残${remaining}日）`;
+        remainText = `（${endDateStr}まで・残${remaining}日）`;
         remainCls += " danger";
       } else if (remaining <= 7) {
-        remainText = `（切れ日まで残${remaining}日）`;
+        remainText = `（${endDateStr}まで・残${remaining}日）`;
         remainCls += " warn";
       } else {
-        remainText = `（切れ日まで残${remaining}日）`;
+        remainText = `（${endDateStr}まで）`;
       }
 
       html += `<div class="gantt-row">`;
@@ -1608,7 +1625,7 @@
       if (barEndIdx >= 0 && barStartIdx < GANTT_DAYS) {
         const left = barStartIdx * cellW;
         const width = (barEndIdx - barStartIdx + 1) * cellW;
-        const barLabel = width > 55 ? `<span class="gantt-bar-text">${entry.days}日</span>` : "";
+        const barLabel = width > 75 ? `<span class="gantt-bar-text">${endDateStr}まで</span>` : (width > 45 ? `<span class="gantt-bar-text">${entry.days}日</span>` : "");
         const extra = entry._preview ? "opacity:0.55;border:2px dashed #94a3b8;" : "";
         html += `<div class="gantt-bar" style="left:${left}px;width:${width}px;background:linear-gradient(135deg,${c1},${c2});${extra}" onclick="showEntryDetail(${entry.id})">${barLabel}</div>`;
       }
