@@ -1,0 +1,50 @@
+{
+  "identifier" : "C7A8B9D0-1234-5678-9ABC-DEF012345678",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "300",
+      "familyShareable" : false,
+      "internalID" : "F1A2B3C4-0001-0000-0000-000000000001",
+      "localizations" : [
+        {
+          "description" : "ガントチャートを10件まで登録できます",
+          "displayName" : "ベーシック",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.calday.app.basic",
+      "referenceName" : "Basic Plan",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "1200",
+      "familyShareable" : false,
+      "internalID" : "F1A2B3C4-0002-0000-0000-000000000002",
+      "localizations" : [
+        {
+          "description" : "ガントチャートを無制限に登録できます",
+          "displayName" : "プレミアム",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.calday.app.premium",
+      "referenceName" : "Premium Plan",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "0000000001",
+    "_developerTeamID" : "4666YH8WY2",
+    "_lastSynchronizedDate" : 730000000
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

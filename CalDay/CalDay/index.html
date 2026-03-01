@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>お薬カレンダー</title>
+  <title>福助 - 服薬スケジュール</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -671,6 +671,58 @@
       transform: scale(0.95);
     }
 
+    /* プランカード */
+    .plan-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1.5px solid var(--glass-border);
+      border-radius: var(--radius-btn);
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .plan-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 16px var(--btn-shadow);
+    }
+    .plan-card:active {
+      transform: scale(0.97);
+    }
+    .plan-card.active-plan {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .plan-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .plan-name {
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .plan-price {
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--primary);
+    }
+    .plan-desc {
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+    .plan-badge {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      margin-left: 8px;
+    }
+
     /* トースト */
     .toast {
       position: fixed;
@@ -1050,6 +1102,7 @@
     <div class="gantt-page-header">
       <button class="gantt-back-btn" id="ganttBackBtn">&larr; 戻る</button>
       <span class="gantt-page-period" id="ganttPeriod"></span>
+      <span id="entryCounter" style="font-size:11px;color:var(--text-sub);margin-left:8px;"></span>
       <div class="gantt-page-nav">
         <button id="ganttPrev">&larr;</button>
         <button id="ganttNext">&rarr;</button>
@@ -1137,6 +1190,53 @@
         <label>カラーテーマ</label>
         <div class="theme-grid" id="themeGrid"></div>
       </div>
+      <div class="theme-section" style="margin-top:20px;">
+        <label>現在のプラン</label>
+        <div id="planInfo" style="padding:12px 0;font-size:14px;color:var(--text-sub);"></div>
+        <button class="btn" id="upgradeBtn" style="width:100%;margin-top:4px;">プランをアップグレード</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- アップグレードモーダル -->
+  <div class="modal-overlay" id="upgradeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+          プランを選択
+        </h3>
+        <button class="modal-close" id="upgradeModalClose">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="plan-card" data-plan="free">
+          <div class="plan-card-header">
+            <span class="plan-name">無料プラン</span>
+            <span class="plan-price">¥0</span>
+          </div>
+          <p class="plan-desc">ガントチャート 3件まで</p>
+        </div>
+        <div class="plan-card" data-plan="basic">
+          <div class="plan-card-header">
+            <span class="plan-name">ベーシック</span>
+            <span class="plan-price">¥300</span>
+          </div>
+          <p class="plan-desc">ガントチャート 10件まで</p>
+        </div>
+        <div class="plan-card" data-plan="premium">
+          <div class="plan-card-header">
+            <span class="plan-name">プレミアム</span>
+            <span class="plan-price">¥1,200</span>
+          </div>
+          <p class="plan-desc">ガントチャート 無制限</p>
+        </div>
+      </div>
+      <button class="btn" id="restoreBtn" style="width:100%;margin-top:16px;background:transparent;color:var(--primary);border:1.5px solid var(--primary);font-size:13px;">購入を復元</button>
+      <p style="font-size:11px;color:var(--text-sub);text-align:center;margin-top:12px;">※ 購入はApp Store経由で処理されます</p>
     </div>
   </div>
 
@@ -1144,6 +1244,44 @@
   <div class="toast" id="toast"></div>
 
 <script>
+  // ==================== プラン管理 ====================
+  const PLAN_KEY = "fukusuke_plan";
+  const PLANS = {
+    free:    { name: "無料プラン", maxEntries: 3 },
+    basic:   { name: "ベーシック", maxEntries: 10, price: 300 },
+    premium: { name: "プレミアム", maxEntries: Infinity, price: 1200 }
+  };
+
+  function getCurrentPlan() {
+    return localStorage.getItem(PLAN_KEY) || "free";
+  }
+  function setCurrentPlan(planId) {
+    localStorage.setItem(PLAN_KEY, planId);
+  }
+  function getMaxEntries() {
+    return PLANS[getCurrentPlan()].maxEntries;
+  }
+  function canAddEntry() {
+    const entries = loadEntries();
+    return entries.length < getMaxEntries();
+  }
+  function showUpgradePrompt() {
+    const plan = getCurrentPlan();
+    const current = PLANS[plan];
+    let msg = "";
+    if (plan === "free") {
+      msg = `無料プランでは${current.maxEntries}件まで登録できます。\n\nベーシック（¥300）: 10件まで\nプレミアム（¥1,200）: 無制限\n\nアップグレードしますか？`;
+    } else if (plan === "basic") {
+      msg = `ベーシックプランでは${current.maxEntries}件まで登録できます。\n\nプレミアム（¥1,200）にアップグレードすると無制限になります。\n\nアップグレードしますか？`;
+    }
+    if (confirm(msg)) {
+      showUpgradeModal();
+    }
+  }
+  function showUpgradeModal() {
+    document.getElementById("upgradeModal").classList.add("active");
+  }
+
   // ==================== データ管理 ====================
   const STORAGE_KEY = "medcal_entries";
 
@@ -1296,6 +1434,7 @@
   // ==================== カレンダー登録 ====================
   function registerToCalendar() {
     if (!lastCalcStart || !lastCalcEnd) return;
+    if (!canAddEntry()) { showUpgradePrompt(); return; }
     const entries = loadEntries();
     const titleText = titleInputEl.value.trim();
     const memoText = memoInputEl.value.trim();
@@ -1380,6 +1519,9 @@
       ? `${ganttStartDate.getFullYear()}年${startM}月`
       : `${startM}/${ganttStartDate.getDate()} 〜 ${endM}/${ganttEnd.getDate()}`;
     document.getElementById("ganttPeriod").textContent = periodText;
+    const maxE = getMaxEntries();
+    const maxStr = maxE === Infinity ? "∞" : maxE;
+    document.getElementById("entryCounter").textContent = `(${entries.length}/${maxStr})`;
 
     // 表示エントリ
     const displayEntries = [...entries];
@@ -1485,7 +1627,7 @@
     const today = toNoon(new Date());
     const remaining = diffDaysInclusive(today, endD);
     const remainStr = remaining <= 0 ? "終了" : `切れ日まで残${remaining}日`;
-    let text = `【お薬カレンダー】\n`;
+    let text = `【福助 - 服薬スケジュール】\n`;
     text += `[タイトル] ${entry.name}\n`;
     text += `[期間] ${formatJP(startD)} 〜 ${formatJP(endD)}\n`;
     text += `[日数] ${entry.days}日分（${remainStr}）`;
@@ -1543,7 +1685,7 @@
     const remainStr = remaining <= 0 ? "終了" : `切れ日まで残${remaining}日`;
 
     // 共有用テキスト
-    let text = `【お薬カレンダー】\n`;
+    let text = `【福助 - 服薬スケジュール】\n`;
     text += `[タイトル] ${entry.name}\n`;
     text += `[期間] ${formatJP(startD)} 〜 ${formatJP(endD)}\n`;
     text += `[日数] ${entry.days}日分（${remainStr}）\n`;
@@ -1588,7 +1730,7 @@
     const remaining = diffDaysInclusive(today, endD);
     const remainStr = remaining <= 0 ? "終了" : `切れ日まで残${remaining}日`;
 
-    let text = `【お薬カレンダー】\n`;
+    let text = `【福助 - 服薬スケジュール】\n`;
     text += `[タイトル] ${entry.name}\n`;
     text += `[期間] ${formatJP(startD)} 〜 ${formatJP(endD)}\n`;
     text += `[日数] ${entry.days}日分（${remainStr}）\n`;
@@ -1611,6 +1753,10 @@
   // 共有データをインポート（共通処理）
   function importCalDayData(encodedData) {
     try {
+      if (!canAddEntry()) {
+        showUpgradePrompt();
+        return false;
+      }
       const json = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
       const start = parseDateInput(json.s);
       if (!start || !json.d) {
@@ -1902,8 +2048,19 @@
   }
 
   // 設定モーダル
+  function updatePlanInfo() {
+    const planId = getCurrentPlan();
+    const plan = PLANS[planId];
+    const entries = loadEntries();
+    const maxStr = plan.maxEntries === Infinity ? "無制限" : `${plan.maxEntries}件`;
+    document.getElementById("planInfo").innerHTML =
+      `<strong>${plan.name}</strong>（登録: ${entries.length}件 / ${maxStr}）`;
+    // Hide upgrade button if premium
+    document.getElementById("upgradeBtn").style.display = planId === "premium" ? "none" : "";
+  }
   document.getElementById('settingsBtn').addEventListener('click', () => {
     buildThemeGrid();
+    updatePlanInfo();
     document.getElementById('settingsModal').classList.add('active');
   });
   document.getElementById('settingsModalClose').addEventListener('click', () => {
@@ -1911,6 +2068,108 @@
   });
   document.getElementById('settingsModal').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) document.getElementById('settingsModal').classList.remove('active');
+  });
+  document.getElementById('upgradeBtn').addEventListener('click', () => {
+    document.getElementById('settingsModal').classList.remove('active');
+    showUpgradeModal();
+  });
+
+  // アップグレードモーダル
+  function updateUpgradeCards() {
+    const current = getCurrentPlan();
+    document.querySelectorAll('.plan-card').forEach(card => {
+      const plan = card.dataset.plan;
+      card.classList.toggle('active-plan', plan === current);
+      // Remove existing badges
+      card.querySelectorAll('.plan-badge').forEach(b => b.remove());
+      if (plan === current) {
+        const badge = document.createElement('span');
+        badge.className = 'plan-badge';
+        badge.textContent = '現在';
+        card.querySelector('.plan-name').appendChild(badge);
+      }
+    });
+  }
+  // StoreKit連携: ネイティブ購入リクエスト
+  const PRODUCT_IDS = {
+    basic: "com.calday.app.basic",
+    premium: "com.calday.app.premium"
+  };
+
+  // ネイティブからのコールバック
+  window._storeCallback = function(result) {
+    document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('purchasing'));
+    if (result.success) {
+      if (result.restored) {
+        showToast("購入を復元しました");
+      } else {
+        showToast(`${PLANS[result.plan]?.name || "プラン"}にアップグレードしました`);
+      }
+      updateUpgradeCards();
+      setTimeout(() => {
+        document.getElementById("upgradeModal").classList.remove("active");
+      }, 800);
+    }
+  };
+
+  function purchaseNative(productId) {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.store) {
+      window.webkit.messageHandlers.store.postMessage({action: "purchase", productId: productId});
+      return true;
+    }
+    return false;
+  }
+
+  function restoreNative() {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.store) {
+      window.webkit.messageHandlers.store.postMessage({action: "restore"});
+      return true;
+    }
+    return false;
+  }
+
+  document.querySelectorAll('.plan-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const plan = card.dataset.plan;
+      const current = getCurrentPlan();
+      if (plan === current) return;
+      if (plan === "free") {
+        showToast("すでに無料プランです");
+        return;
+      }
+      const productId = PRODUCT_IDS[plan];
+      if (!productId) return;
+
+      // ネイティブStoreKit呼び出し
+      card.classList.add('purchasing');
+      const sent = purchaseNative(productId);
+      if (!sent) {
+        // ブラウザ/デバッグ環境: フォールバック
+        card.classList.remove('purchasing');
+        const planInfo = PLANS[plan];
+        if (confirm(`${planInfo.name}（¥${planInfo.price.toLocaleString()}）にアップグレードしますか？`)) {
+          setCurrentPlan(plan);
+          updateUpgradeCards();
+          showToast(`${planInfo.name}にアップグレードしました`);
+          setTimeout(() => {
+            document.getElementById("upgradeModal").classList.remove("active");
+          }, 800);
+        }
+      }
+    });
+  });
+  document.getElementById('restoreBtn').addEventListener('click', () => {
+    if (!restoreNative()) {
+      showToast("この環境では復元できません");
+    } else {
+      showToast("復元中...");
+    }
+  });
+  document.getElementById('upgradeModalClose').addEventListener('click', () => {
+    document.getElementById('upgradeModal').classList.remove('active');
+  });
+  document.getElementById('upgradeModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) document.getElementById('upgradeModal').classList.remove('active');
   });
 
   // 保存済みテーマを復元

@@ -1235,7 +1235,8 @@
           <p class="plan-desc">ガントチャート 無制限</p>
         </div>
       </div>
-      <p style="font-size:11px;color:var(--text-sub);text-align:center;margin-top:16px;">※ 購入はApp Store経由で処理されます</p>
+      <button class="btn" id="restoreBtn" style="width:100%;margin-top:16px;background:transparent;color:var(--primary);border:1.5px solid var(--primary);font-size:13px;">購入を復元</button>
+      <p style="font-size:11px;color:var(--text-sub);text-align:center;margin-top:12px;">※ 購入はApp Store経由で処理されます</p>
     </div>
   </div>
 
@@ -2089,26 +2090,80 @@
       }
     });
   }
+  // StoreKit連携: ネイティブ購入リクエスト
+  const PRODUCT_IDS = {
+    basic: "com.calday.app.basic",
+    premium: "com.calday.app.premium"
+  };
+
+  // ネイティブからのコールバック
+  window._storeCallback = function(result) {
+    document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('purchasing'));
+    if (result.success) {
+      if (result.restored) {
+        showToast("購入を復元しました");
+      } else {
+        showToast(`${PLANS[result.plan]?.name || "プラン"}にアップグレードしました`);
+      }
+      updateUpgradeCards();
+      setTimeout(() => {
+        document.getElementById("upgradeModal").classList.remove("active");
+      }, 800);
+    }
+  };
+
+  function purchaseNative(productId) {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.store) {
+      window.webkit.messageHandlers.store.postMessage({action: "purchase", productId: productId});
+      return true;
+    }
+    return false;
+  }
+
+  function restoreNative() {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.store) {
+      window.webkit.messageHandlers.store.postMessage({action: "restore"});
+      return true;
+    }
+    return false;
+  }
+
   document.querySelectorAll('.plan-card').forEach(card => {
     card.addEventListener('click', () => {
       const plan = card.dataset.plan;
       const current = getCurrentPlan();
       if (plan === current) return;
-      // For now, simulate purchase (will be replaced with StoreKit)
       if (plan === "free") {
         showToast("すでに無料プランです");
         return;
       }
-      const planInfo = PLANS[plan];
-      if (confirm(`${planInfo.name}（¥${planInfo.price.toLocaleString()}）にアップグレードしますか？\n\n※ 実際のApp Store課金は今後実装されます`)) {
-        setCurrentPlan(plan);
-        updateUpgradeCards();
-        showToast(`${planInfo.name}にアップグレードしました`);
-        setTimeout(() => {
-          document.getElementById("upgradeModal").classList.remove("active");
-        }, 800);
+      const productId = PRODUCT_IDS[plan];
+      if (!productId) return;
+
+      // ネイティブStoreKit呼び出し
+      card.classList.add('purchasing');
+      const sent = purchaseNative(productId);
+      if (!sent) {
+        // ブラウザ/デバッグ環境: フォールバック
+        card.classList.remove('purchasing');
+        const planInfo = PLANS[plan];
+        if (confirm(`${planInfo.name}（¥${planInfo.price.toLocaleString()}）にアップグレードしますか？`)) {
+          setCurrentPlan(plan);
+          updateUpgradeCards();
+          showToast(`${planInfo.name}にアップグレードしました`);
+          setTimeout(() => {
+            document.getElementById("upgradeModal").classList.remove("active");
+          }, 800);
+        }
       }
     });
+  });
+  document.getElementById('restoreBtn').addEventListener('click', () => {
+    if (!restoreNative()) {
+      showToast("この環境では復元できません");
+    } else {
+      showToast("復元中...");
+    }
   });
   document.getElementById('upgradeModalClose').addEventListener('click', () => {
     document.getElementById('upgradeModal').classList.remove('active');

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>福助 - 服薬スケジュール</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: linear-gradient(180deg, #FFF5EB 0%, #FFE0C2 100%);
+      min-height: 100vh;
+      color: #1a1a1a;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 32px;
+    }
+    .desc {
+      font-size: 15px;
+      line-height: 1.8;
+      color: #444;
+      text-align: left;
+      margin-bottom: 32px;
+    }
+    .features {
+      text-align: left;
+      margin-bottom: 32px;
+    }
+    .features h2 {
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+    .features ul {
+      list-style: none;
+      padding: 0;
+    }
+    .features li {
+      padding: 8px 0;
+      font-size: 14px;
+      color: #444;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .features li::before {
+      content: "\2713 ";
+      color: #6366f1;
+      font-weight: 700;
+    }
+    .plans {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .plan {
+      flex: 1;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 20px 12px;
+      border: 1px solid rgba(255,255,255,0.5);
+    }
+    .plan-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .plan-price { font-size: 22px; font-weight: 800; color: #6366f1; margin-bottom: 4px; }
+    .plan-detail { font-size: 12px; color: #888; }
+    .badge-appstore {
+      display: inline-block;
+      margin-top: 24px;
+    }
+    .badge-appstore img {
+      height: 48px;
+    }
+    .links {
+      margin-top: 32px;
+      font-size: 13px;
+    }
+    .links a {
+      color: #6366f1;
+      text-decoration: none;
+      margin: 0 12px;
+    }
+    .links a:hover { text-decoration: underline; }
+    footer {
+      margin-top: 48px;
+      font-size: 12px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>福助</h1>
+    <p class="subtitle">服薬スケジュール</p>
+
+    <p class="desc">
+      自分や家族の服薬スケジュールを、ガントチャートで見やすく管理できるアプリです。
+      処方日と日数を入力するだけで終了日を自動計算。家族間の共有もワンタップで簡単です。
+    </p>
+
+    <div class="features">
+      <h2>主な機能</h2>
+      <ul>
+        <li>ガントチャートで服薬期間を視覚的に管理</li>
+        <li>処方開始日と日数から終了日を自動計算</li>
+        <li>残り日数をリアルタイム表示</li>
+        <li>メモ機能で服薬に関する情報を記録</li>
+        <li>7種類のカラーテーマ</li>
+        <li>共有リンクからワンタップ取り込み</li>
+        <li>データはすべて端末内に保存</li>
+      </ul>
+    </div>
+
+    <div class="plans">
+      <div class="plan">
+        <div class="plan-name">無料</div>
+        <div class="plan-price">¥0</div>
+        <div class="plan-detail">3件まで</div>
+      </div>
+      <div class="plan">
+        <div class="plan-name">ベーシック</div>
+        <div class="plan-price">¥300</div>
+        <div class="plan-detail">10件まで</div>
+      </div>
+      <div class="plan">
+        <div class="plan-name">プレミアム</div>
+        <div class="plan-price">¥1,200</div>
+        <div class="plan-detail">無制限</div>
+      </div>
+    </div>
+
+    <div class="links">
+      <a href="privacy-policy.html">プライバシーポリシー</a>
+      <a href="mailto:calday.app@gmail.com">お問い合わせ</a>
+    </div>
+
+    <footer>
+      &copy; 2026 福助. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>
