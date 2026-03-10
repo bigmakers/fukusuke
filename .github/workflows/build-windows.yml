@@ -1,0 +1,48 @@
+name: Build Windows App
+
+on:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: CalDayWindows
+        run: npm install
+
+      - name: Build installer & portable
+        working-directory: CalDayWindows
+        run: npm run build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fukusuke-windows
+          path: |
+            CalDayWindows/dist/*.exe
+          retention-days: 90
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: CalDayWindows/dist/*.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

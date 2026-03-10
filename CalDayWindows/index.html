@@ -1317,16 +1317,16 @@
         </div>
         <p style="font-size:11px;color:var(--text-sub);margin-top:8px;">終了日を過ぎたデータを自動で削除します</p>
       </div>
-      <div class="theme-section" style="margin-top:20px;">
+      <div class="theme-section" style="margin-top:20px;display:none;">
         <label>現在のプラン</label>
         <div id="planInfo" style="padding:12px 0;font-size:14px;color:var(--text-sub);"></div>
-        <button class="btn" id="upgradeBtn" style="width:100%;margin-top:4px;">プランをアップグレード</button>
+        <button class="btn" id="upgradeBtn" style="width:100%;margin-top:4px;display:none;">プランをアップグレード</button>
       </div>
     </div>
   </div>
 
-  <!-- アップグレードモーダル -->
-  <div class="modal-overlay" id="upgradeModal">
+  <!-- アップグレードモーダル（Windows版では非表示） -->
+  <div class="modal-overlay" id="upgradeModal" style="display:none!important;">
     <div class="modal">
       <div class="modal-header">
         <h3>
@@ -1391,8 +1391,11 @@
     premium: { name: "プレミアム", maxEntries: Infinity, price: 1200 }
   };
 
+  // Windows版: 常にプレミアム（完全無料）
+  localStorage.setItem(PLAN_KEY, "premium");
+
   function getCurrentPlan() {
-    return localStorage.getItem(PLAN_KEY) || "free";
+    return "premium";
   }
   function setCurrentPlan(planId) {
     localStorage.setItem(PLAN_KEY, planId);

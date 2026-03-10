@@ -1,0 +1,55 @@
+{
+  "name": "fukusuke",
+  "version": "1.0.0",
+  "description": "福助 - 服薬スケジュール計算",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "build:portable": "electron-builder --win portable",
+    "build:installer": "electron-builder --win nsis"
+  },
+  "author": "CalDay",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.calday.app",
+    "productName": "福助",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "installerLanguages": ["ja"],
+      "language": "1041"
+    },
+    "protocols": [
+      {
+        "name": "CalDay Import",
+        "schemes": ["calday"]
+      }
+    ]
+  }
+}
