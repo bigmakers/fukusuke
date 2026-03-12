@@ -2827,7 +2827,7 @@
   setInterval(updateHeaderClock, 1000);
 
   // ==================== キーボード対応 ====================
-  document.querySelectorAll('.modal input, .modal textarea').forEach(el => {
+  document.querySelectorAll('input, textarea').forEach(el => {
     el.addEventListener('focus', () => {
       setTimeout(() => {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
