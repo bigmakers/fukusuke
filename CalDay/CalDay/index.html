@@ -1949,6 +1949,18 @@
   }
 
   function printViaIframe(html, onDone) {
+    // iOS/Android WebView: use native print handler
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.print) {
+      window.webkit.messageHandlers.print.postMessage(html);
+      if (onDone) setTimeout(onDone, 500);
+      return;
+    }
+    if (typeof AndroidBridge !== 'undefined' && AndroidBridge.printHTML) {
+      AndroidBridge.printHTML(html);
+      if (onDone) setTimeout(onDone, 500);
+      return;
+    }
+    // Desktop browser / Electron: use iframe approach
     let iframe = document.getElementById("printIframe");
     if (iframe) iframe.remove();
     iframe = document.createElement("iframe");

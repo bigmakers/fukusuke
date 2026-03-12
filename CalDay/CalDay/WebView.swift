@@ -85,6 +85,13 @@ class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScript
         topViewController()?.present(ac, animated: true)
     }
 
+    private func printHTML(_ html: String) {
+        let fmt = UIMarkupTextPrintFormatter(markupText: html)
+        let printController = UIPrintInteractionController.shared
+        printController.printFormatter = fmt
+        printController.present(animated: true, completionHandler: nil)
+    }
+
     private func topViewController() -> UIViewController? {
         guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = scene.windows.first(where: { $0.isKeyWindow }) else { return nil }
@@ -100,9 +107,15 @@ class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScript
         viewModel?.syncCurrentPlan()
     }
 
-    // MARK: - WKScriptMessageHandler: StoreKit連携
+    // MARK: - WKScriptMessageHandler: StoreKit連携 + 印刷
     func userContentController(_ userContentController: WKUserContentController,
                                didReceive message: WKScriptMessage) {
+        // 印刷ハンドラ
+        if message.name == "print", let html = message.body as? String {
+            printHTML(html)
+            return
+        }
+
         guard let body = message.body as? [String: String],
               let action = body["action"] else { return }
 
@@ -172,6 +185,8 @@ struct WebView: UIViewRepresentable {
 
         // StoreKit メッセージハンドラ追加
         config.userContentController.add(context.coordinator, name: "store")
+        // 印刷メッセージハンドラ追加
+        config.userContentController.add(context.coordinator, name: "print")
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.scrollView.contentInsetAdjustmentBehavior = .automatic

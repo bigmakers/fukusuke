@@ -1,6 +1,10 @@
 package com.calday.app
 
+import android.print.PrintAttributes
+import android.print.PrintManager
 import android.webkit.JavascriptInterface
+import android.webkit.WebView
+import android.content.Context
 import org.json.JSONObject
 
 /**
@@ -36,6 +40,25 @@ class WebAppInterface(
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    /**
+     * Print HTML content using Android PrintManager.
+     * Called from JavaScript: AndroidBridge.printHTML(htmlString)
+     */
+    @JavascriptInterface
+    fun printHTML(html: String) {
+        activity.runOnUiThread {
+            val printWebView = WebView(activity)
+            printWebView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+            printWebView.webViewClient = object : android.webkit.WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    val printManager = activity.getSystemService(Context.PRINT_SERVICE) as PrintManager
+                    val adapter = printWebView.createPrintDocumentAdapter("fukusuke_print")
+                    printManager.print("福助 印刷", adapter, PrintAttributes.Builder().build())
+                }
+            }
         }
     }
 
