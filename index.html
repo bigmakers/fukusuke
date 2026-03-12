@@ -1122,6 +1122,12 @@
       </div>
 
       <div class="input-group">
+        <label for="tagInput">タグ（人名・カテゴリなど）</label>
+        <input id="tagInput" type="text" placeholder="例: 父、母、自分" list="tagSuggestions" />
+        <datalist id="tagSuggestions"></datalist>
+      </div>
+
+      <div class="input-group">
         <label for="memoInput">メモ（用法・備考など自由に記入）</label>
         <textarea id="memoInput" placeholder=""></textarea>
       </div>
@@ -1210,7 +1216,7 @@
   <!-- PAGE: ガントチャート -->
   <div class="page" id="pageGantt">
     <div class="gantt-page-header">
-      <button class="gantt-back-btn" id="ganttBackBtn">&larr; 戻る</button>
+      <button class="gantt-back-btn" id="ganttBackBtn">戻る</button>
       <span class="gantt-page-period" id="ganttPeriod"></span>
       <span id="entryCounter" style="font-size:11px;color:var(--text-sub);margin-left:8px;"></span>
       <div class="gantt-page-nav">
@@ -1255,6 +1261,11 @@
         <input id="editDays" type="number" min="1" step="1" inputmode="numeric" />
       </div>
       <div class="input-group">
+        <label for="editTag">タグ</label>
+        <input id="editTag" type="text" placeholder="例: 父、母、自分" list="editTagSuggestions" />
+        <datalist id="editTagSuggestions"></datalist>
+      </div>
+      <div class="input-group">
         <label for="editMemo">メモ</label>
         <textarea id="editMemo" placeholder=""></textarea>
       </div>
@@ -1268,21 +1279,17 @@
         <label>コピー内容</label>
         <div class="copy-preview" id="editPreview"></div>
         <div class="modal-actions">
-          <button class="btn btn-copy" id="editCopyBtn">
-            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-            コピー
+          <button class="btn btn-copy" id="editCopyBtn" title="コピー" style="padding:10px 14px;">
+            <svg class="icon" style="margin:0;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
           </button>
-          <button class="btn btn-share" id="editShareBtn">
-            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-            共有
+          <button class="btn btn-share" id="editShareBtn" title="共有" style="padding:10px 14px;">
+            <svg class="icon" style="margin:0;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
           </button>
-          <button class="btn" id="editQRBtn" style="background:linear-gradient(135deg,#1e293b,#334155);color:#fff;">
-            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM17 17h4v4h-4zM14 14h3v3h-3zM17 14h4v3h-4z" /></svg>
-            QR
+          <button class="btn" id="editQRBtn" title="QR" style="background:linear-gradient(135deg,#1e293b,#334155);color:#fff;padding:10px 14px;">
+            <svg class="icon" style="margin:0;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM17 17h4v4h-4zM14 14h3v3h-3zM17 14h4v3h-4z" /></svg>
           </button>
-          <button class="btn" id="editPrintBtn" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;">
-            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-            印刷
+          <button class="btn" id="editPrintBtn" title="印刷" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:10px 14px;">
+            <svg class="icon" style="margin:0;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
           </button>
         </div>
       </div>
@@ -1387,9 +1394,13 @@
     <span class="share-toolbar-count" id="shareToolbarCount">0件選択中</span>
     <div class="share-toolbar-actions">
       <button class="btn btn-secondary" id="shareToolbarCancel" style="padding:12px 20px;font-size:14px;">キャンセル</button>
+      <button class="btn" id="shareToolbarPrint" style="padding:12px 20px;font-size:14px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;">
+        <svg style="width:16px;height:16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+        印刷
+      </button>
       <button class="btn btn-share" id="shareToolbarSend" style="padding:12px 20px;font-size:14px;">
         <svg style="width:16px;height:16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-        共有する
+        共有
       </button>
     </div>
   </div>
@@ -1707,6 +1718,14 @@
   ];
   function getEntryColor(idx) { return ENTRY_COLORS[idx % ENTRY_COLORS.length]; }
 
+  // タグサジェスト更新
+  function updateTagSuggestions(datalistId) {
+    const entries = loadEntries();
+    const tags = [...new Set(entries.map(e => e.tag).filter(Boolean))];
+    const dl = document.getElementById(datalistId);
+    dl.innerHTML = tags.map(t => `<option value="${escapeHtml(t)}">`).join("");
+  }
+
   // ==================== 日付ユーティリティ ====================
   function toNoon(date) {
     const d = new Date(date);
@@ -1749,6 +1768,7 @@
   const startDateEl = document.getElementById("startDate");
   const daysEl = document.getElementById("days");
   const titleInputEl = document.getElementById("titleInput");
+  const tagInputEl = document.getElementById("tagInput");
   const memoInputEl = document.getElementById("memoInput");
   const endDateTxt = document.getElementById("endDateTxt");
   const fromTodayTxt = document.getElementById("fromTodayTxt");
@@ -1844,6 +1864,7 @@
     if (!canAddEntry()) { showUpgradePrompt(); return; }
     const entries = loadEntries();
     const titleText = titleInputEl.value.trim();
+    const tagText = tagInputEl.value.trim();
     const memoText = memoInputEl.value.trim();
     const displayName = titleText || "（タイトルなし）";
     entries.push({
@@ -1852,6 +1873,7 @@
       start: formatISO(lastCalcStart),
       end: formatISO(lastCalcEnd),
       days: Number(daysEl.value),
+      tag: tagText,
       memo: memoText,
       createdAt: new Date().toISOString()
     });
@@ -1956,6 +1978,7 @@
           start: formatISO(lastCalcStart),
           end: formatISO(lastCalcEnd),
           days: diffDaysInclusive(lastCalcStart, lastCalcEnd),
+          tag: tagInputEl.value.trim(),
           memo: memoInputEl.value.trim(),
           _preview: true
         });
@@ -1983,9 +2006,27 @@
     }
     html += `</div>`;
 
+    // タグ別グループ化
+    const tagGroups = new Map();
+    displayEntries.forEach((entry, idx) => {
+      const tag = entry.tag || "";
+      if (!tagGroups.has(tag)) tagGroups.set(tag, []);
+      tagGroups.get(tag).push({ entry, idx });
+    });
+
     // 行
     const msPerDay = 24 * 60 * 60 * 1000;
-    displayEntries.forEach((entry, idx) => {
+    let globalIdx = 0;
+    for (const [tag, group] of tagGroups) {
+      // タグヘッダー
+      if (tagGroups.size > 1 || tag) {
+        html += `<div class="gantt-tag-header" style="display:flex;align-items:center;padding:6px 12px;background:rgba(99,102,241,0.08);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--primary);gap:6px;">`;
+        html += `<svg style="width:14px;height:14px;flex-shrink:0;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" /></svg>`;
+        html += `${tag || "タグなし"}</div>`;
+      }
+
+    group.forEach(({ entry, idx }) => {
+      globalIdx++;
       const [c1, c2] = entry._preview ? ["#94a3b8","#cbd5e1"] : getEntryColor(idx);
       const eStart = toNoon(new Date(entry.start));
       const eEnd = toNoon(new Date(entry.end));
@@ -2057,6 +2098,7 @@
 
       html += `</div></div>`;
     });
+    } // end tagGroups loop
 
     container.innerHTML = html;
   }
@@ -2157,8 +2199,68 @@
     }
   }
 
+  function printSelectedEntries() {
+    if (selectedEntryIds.size === 0) return;
+    const entries = loadEntries().filter(e => selectedEntryIds.has(e.id));
+    if (entries.length === 0) return;
+    const today = toNoon(new Date());
+
+    // タグ別にグループ化
+    const tagMap = new Map();
+    entries.forEach(e => {
+      const tag = e.tag || "";
+      if (!tagMap.has(tag)) tagMap.set(tag, []);
+      tagMap.get(tag).push(e);
+    });
+
+    let printHTML = `<html><head><meta charset="utf-8"><title>残日数（残薬）</title>
+      <style>
+        body { font-family: -apple-system, sans-serif; padding: 20px; color: #333; }
+        h1 { font-size: 20px; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        h2 { font-size: 16px; margin: 16px 0 8px; color: #6366f1; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 16px; }
+        th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+        th { background: #f5f5f5; font-weight: 700; }
+        .ended { color: #999; }
+        .urgent { color: #e11d48; font-weight: 700; }
+        .print-date { text-align: right; font-size: 12px; color: #666; margin-bottom: 10px; }
+        @media print { body { padding: 0; } }
+      </style></head><body>`;
+    const now = new Date();
+    printHTML += `<div class="print-date">印刷日: ${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}</div>`;
+    printHTML += `<h1>残日数（残薬）</h1>`;
+
+    for (const [tag, tagEntries] of tagMap) {
+      if (tagMap.size > 1 || tag) {
+        printHTML += `<h2>${tag || "タグなし"}</h2>`;
+      }
+      printHTML += `<table><tr><th>タイトル</th><th>期間</th><th>日数</th><th>残日数</th><th>メモ</th></tr>`;
+      const sorted = [...tagEntries].sort((a, b) => a.start.localeCompare(b.start));
+      for (const e of sorted) {
+        const endD = new Date(e.end + "T12:00:00");
+        const remaining = diffDaysInclusive(today, endD);
+        const cls = remaining <= 0 ? 'ended' : remaining <= 3 ? 'urgent' : '';
+        const remainStr = remaining <= 0 ? '終了' : `${remaining}日`;
+        const startD = new Date(e.start + "T12:00:00");
+        printHTML += `<tr class="${cls}"><td>${escapeHtml(e.name)}</td><td>${formatJP(startD)} 〜 ${formatJP(endD)}</td><td>${e.days}日</td><td>${remainStr}</td><td>${escapeHtml(e.memo || '')}</td></tr>`;
+      }
+      printHTML += `</table>`;
+    }
+    printHTML += `</body></html>`;
+    const printWin = window.open('', '_blank');
+    if (printWin) {
+      printWin.document.write(printHTML);
+      printWin.document.close();
+      printWin.focus();
+      setTimeout(() => { printWin.print(); toggleShareMode(); }, 300);
+    } else {
+      showToast("ポップアップがブロックされました");
+    }
+  }
+
   document.getElementById('ganttShareModeBtn').addEventListener('click', toggleShareMode);
   document.getElementById('shareToolbarCancel').addEventListener('click', toggleShareMode);
+  document.getElementById('shareToolbarPrint').addEventListener('click', printSelectedEntries);
   document.getElementById('shareToolbarSend').addEventListener('click', shareSelectedEntries);
 
   let editingEntryId = null;
@@ -2185,7 +2287,9 @@
     document.getElementById("editTitle").value = entry.name || "";
     document.getElementById("editStart").value = entry.start;
     document.getElementById("editDays").value = entry.days;
+    document.getElementById("editTag").value = entry.tag || "";
     document.getElementById("editMemo").value = entry.memo || "";
+    updateTagSuggestions("editTagSuggestions");
     updateEditPreview(entry);
     document.getElementById("editModal").classList.add("active");
   }
@@ -2198,6 +2302,7 @@
     const title = document.getElementById("editTitle").value.trim();
     const startVal = document.getElementById("editStart").value;
     const daysVal = Number(document.getElementById("editDays").value);
+    const tagVal = document.getElementById("editTag").value.trim();
     const memo = document.getElementById("editMemo").value.trim();
     if (!startVal || !daysVal || daysVal < 1) {
       showToast("開始日と日数を入力してください");
@@ -2209,6 +2314,7 @@
     entries[idx].start = formatISO(start);
     entries[idx].end = formatISO(end);
     entries[idx].days = daysVal;
+    entries[idx].tag = tagVal;
     entries[idx].memo = memo;
     saveEntries(entries);
     closeEditModal();
@@ -2486,6 +2592,7 @@
     startDateEl.value = "";
     daysEl.value = "";
     titleInputEl.value = "";
+    tagInputEl.value = "";
     memoInputEl.value = "";
     endDateTxt.textContent = "---";
     endDateTxt.classList.add("empty");
@@ -2838,6 +2945,7 @@
   // ==================== 初期化 ====================
   ganttStartDate = toNoon(new Date());
   ganttStartDate.setDate(ganttStartDate.getDate() - 3);
+  updateTagSuggestions("tagSuggestions");
   renderGantt();
 </script>
 </body>
