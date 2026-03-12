@@ -1067,6 +1067,31 @@
       .gantt-cell { min-width: 44px; flex: 0 0 44px; }
       .gantt-label-col, .gantt-row-label { min-width: 130px; max-width: 130px; }
     }
+
+    /* 印刷用スタイル */
+    @media print {
+      body.printing > *:not(#printArea) { display: none !important; }
+      body.printing #printArea {
+        display: block !important;
+        position: static;
+        font-family: -apple-system, sans-serif;
+        padding: 20px;
+        color: #333;
+      }
+      body.printing #printArea h1 {
+        font-size: 20px; text-align: center; margin-bottom: 20px;
+        border-bottom: 2px solid #333; padding-bottom: 10px;
+      }
+      body.printing #printArea h2 { font-size: 16px; margin: 16px 0 8px; color: #6366f1; }
+      body.printing #printArea table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 16px; }
+      body.printing #printArea th,
+      body.printing #printArea td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+      body.printing #printArea th { background: #f5f5f5; font-weight: 700; }
+      body.printing #printArea .ended { color: #999; }
+      body.printing #printArea .urgent { color: #e11d48; font-weight: 700; }
+      body.printing #printArea .print-date { text-align: right; font-size: 12px; color: #666; margin-bottom: 10px; }
+    }
+    #printArea { display: none; }
   </style>
 </head>
 <body>
@@ -1948,22 +1973,21 @@
     setTimeout(() => { toast.classList.remove("show"); }, 2500);
   }
 
-  function printViaIframe(html, onDone) {
-    let iframe = document.getElementById("printIframe");
-    if (iframe) iframe.remove();
-    iframe = document.createElement("iframe");
-    iframe.id = "printIframe";
-    iframe.style.cssText = "position:fixed;width:0;height:0;border:none;left:-9999px;";
-    document.body.appendChild(iframe);
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    doc.open();
-    doc.write(html);
-    doc.close();
-    iframe.contentWindow.focus();
+  function printHTML(bodyContent, onDone) {
+    // 印刷用の要素を作成
+    let printArea = document.getElementById("printArea");
+    if (printArea) printArea.remove();
+    printArea = document.createElement("div");
+    printArea.id = "printArea";
+    printArea.innerHTML = bodyContent;
+    document.body.appendChild(printArea);
+    document.body.classList.add("printing");
     setTimeout(() => {
-      iframe.contentWindow.print();
-      setTimeout(() => { iframe.remove(); if (onDone) onDone(); }, 1000);
-    }, 300);
+      window.print();
+      document.body.classList.remove("printing");
+      printArea.remove();
+      if (onDone) onDone();
+    }, 100);
   }
 
   // ==================== ページ切り替え ====================
@@ -2297,28 +2321,15 @@
       tagMap.get(key).push(e);
     });
 
-    let printHTML = `<html><head><meta charset="utf-8"><title>残日数（残薬）</title>
-      <style>
-        body { font-family: -apple-system, sans-serif; padding: 20px; color: #333; }
-        h1 { font-size: 20px; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        h2 { font-size: 16px; margin: 16px 0 8px; color: #6366f1; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 16px; }
-        th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
-        th { background: #f5f5f5; font-weight: 700; }
-        .ended { color: #999; }
-        .urgent { color: #e11d48; font-weight: 700; }
-        .print-date { text-align: right; font-size: 12px; color: #666; margin-bottom: 10px; }
-        @media print { body { padding: 0; } }
-      </style></head><body>`;
     const now = new Date();
-    printHTML += `<div class="print-date">印刷日: ${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}</div>`;
-    printHTML += `<h1>残日数（残薬）</h1>`;
+    let content = `<div class="print-date">印刷日: ${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}</div>`;
+    content += `<h1>残日数（残薬）</h1>`;
 
     for (const [tag, tagEntries] of tagMap) {
       if (tagMap.size > 1 || tag) {
-        printHTML += `<h2>${tag || "タグなし"}</h2>`;
+        content += `<h2>${tag || "タグなし"}</h2>`;
       }
-      printHTML += `<table><tr><th>タイトル</th><th>期間</th><th>日数</th><th>残日数</th><th>メモ</th></tr>`;
+      content += `<table><tr><th>タイトル</th><th>期間</th><th>日数</th><th>残日数</th><th>メモ</th></tr>`;
       const sorted = [...tagEntries].sort((a, b) => a.start.localeCompare(b.start));
       for (const e of sorted) {
         const endD = new Date(e.end + "T12:00:00");
@@ -2326,12 +2337,11 @@
         const cls = remaining <= 0 ? 'ended' : remaining <= 3 ? 'urgent' : '';
         const remainStr = remaining <= 0 ? '終了' : `${remaining}日`;
         const startD = new Date(e.start + "T12:00:00");
-        printHTML += `<tr class="${cls}"><td>${escapeHtml(e.name)}</td><td>${formatJP(startD)} 〜 ${formatJP(endD)}</td><td>${e.days}日</td><td>${remainStr}</td><td>${escapeHtml(e.memo || '')}</td></tr>`;
+        content += `<tr class="${cls}"><td>${escapeHtml(e.name)}</td><td>${formatJP(startD)} 〜 ${formatJP(endD)}</td><td>${e.days}日</td><td>${remainStr}</td><td>${escapeHtml(e.memo || '')}</td></tr>`;
       }
-      printHTML += `</table>`;
+      content += `</table>`;
     }
-    printHTML += `</body></html>`;
-    printViaIframe(printHTML, () => toggleShareMode());
+    printHTML(content, () => toggleShareMode());
   }
 
   document.getElementById('ganttShareModeBtn').addEventListener('click', toggleShareMode);
@@ -2597,22 +2607,10 @@
     const entries = loadEntries();
     const today = toNoon(new Date());
     // 全エントリの残日数リストを作成
-    let printHTML = `<html><head><meta charset="utf-8"><title>残日数（残薬）</title>
-      <style>
-        body { font-family: -apple-system, sans-serif; padding: 20px; color: #333; }
-        h1 { font-size: 20px; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
-        th { background: #f5f5f5; font-weight: 700; }
-        .ended { color: #999; }
-        .urgent { color: #e11d48; font-weight: 700; }
-        .print-date { text-align: right; font-size: 12px; color: #666; margin-bottom: 10px; }
-        @media print { body { padding: 0; } }
-      </style></head><body>`;
     const now = new Date();
-    printHTML += `<div class="print-date">印刷日: ${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}</div>`;
-    printHTML += `<h1>残日数（残薬）</h1>`;
-    printHTML += `<table><tr><th>タイトル</th><th>期間</th><th>日数</th><th>残日数</th><th>メモ</th></tr>`;
+    let content = `<div class="print-date">印刷日: ${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}</div>`;
+    content += `<h1>残日数（残薬）</h1>`;
+    content += `<table><tr><th>タイトル</th><th>期間</th><th>日数</th><th>残日数</th><th>メモ</th></tr>`;
     const sorted = [...entries].sort((a, b) => a.start.localeCompare(b.start));
     for (const e of sorted) {
       const endD = new Date(e.end + "T12:00:00");
@@ -2620,10 +2618,10 @@
       const cls = remaining <= 0 ? 'ended' : remaining <= 3 ? 'urgent' : '';
       const remainStr = remaining <= 0 ? '終了' : `${remaining}日`;
       const startD = new Date(e.start + "T12:00:00");
-      printHTML += `<tr class="${cls}"><td>${escapeHtml(e.name)}</td><td>${formatJP(startD)} 〜 ${formatJP(endD)}</td><td>${e.days}日</td><td>${remainStr}</td><td>${escapeHtml(e.memo || '')}</td></tr>`;
+      content += `<tr class="${cls}"><td>${escapeHtml(e.name)}</td><td>${formatJP(startD)} 〜 ${formatJP(endD)}</td><td>${e.days}日</td><td>${remainStr}</td><td>${escapeHtml(e.memo || '')}</td></tr>`;
     }
-    printHTML += `</table></body></html>`;
-    printViaIframe(printHTML);
+    content += `</table>`;
+    printHTML(content);
   });
   document.getElementById("editDeleteBtn").addEventListener("click", () => {
     if (editingEntryId === null) return;
