@@ -1122,8 +1122,13 @@
       </div>
 
       <div class="input-group">
-        <label for="tagInput">タグ（人名・カテゴリなど）</label>
-        <input id="tagInput" type="text" placeholder="例: 父、母、自分" list="tagSuggestions" />
+        <label>タグ（人名・カテゴリなど）</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <input id="tagInput1" type="text" placeholder="タグ1" list="tagSuggestions" style="font-size:13px;padding:8px 10px;" />
+          <input id="tagInput2" type="text" placeholder="タグ2" list="tagSuggestions" style="font-size:13px;padding:8px 10px;" />
+          <input id="tagInput3" type="text" placeholder="タグ3" list="tagSuggestions" style="font-size:13px;padding:8px 10px;" />
+          <input id="tagInput4" type="text" placeholder="タグ4" list="tagSuggestions" style="font-size:13px;padding:8px 10px;" />
+        </div>
         <datalist id="tagSuggestions"></datalist>
       </div>
 
@@ -1227,6 +1232,7 @@
         <button id="ganttNext">&rarr;</button>
       </div>
     </div>
+    <div id="ganttTagFilter" style="display:none;padding:6px 12px;overflow-x:auto;white-space:nowrap;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.5);-webkit-overflow-scrolling:touch;"></div>
     <div class="gantt-page-body">
       <div class="gantt-wrapper" id="ganttWrapper">
         <div id="ganttContent"></div>
@@ -1236,7 +1242,7 @@
 
   <!-- 編集モーダル -->
   <div class="modal-overlay" id="editModal">
-    <div class="modal" style="max-width:440px">
+    <div class="modal" style="max-width:440px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
       <div class="modal-header">
         <h3>
           <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1261,8 +1267,13 @@
         <input id="editDays" type="number" min="1" step="1" inputmode="numeric" />
       </div>
       <div class="input-group">
-        <label for="editTag">タグ</label>
-        <input id="editTag" type="text" placeholder="例: 父、母、自分" list="editTagSuggestions" />
+        <label>タグ</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <input id="editTag1" type="text" placeholder="タグ1" list="editTagSuggestions" style="font-size:13px;padding:8px 10px;" />
+          <input id="editTag2" type="text" placeholder="タグ2" list="editTagSuggestions" style="font-size:13px;padding:8px 10px;" />
+          <input id="editTag3" type="text" placeholder="タグ3" list="editTagSuggestions" style="font-size:13px;padding:8px 10px;" />
+          <input id="editTag4" type="text" placeholder="タグ4" list="editTagSuggestions" style="font-size:13px;padding:8px 10px;" />
+        </div>
         <datalist id="editTagSuggestions"></datalist>
       </div>
       <div class="input-group">
@@ -1721,9 +1732,25 @@
   // タグサジェスト更新
   function updateTagSuggestions(datalistId) {
     const entries = loadEntries();
-    const tags = [...new Set(entries.map(e => e.tag).filter(Boolean))];
+    const tagSet = new Set();
+    entries.forEach(e => {
+      const t = e.tags || (e.tag ? [e.tag] : []);
+      t.forEach(tag => { if (tag) tagSet.add(tag); });
+    });
     const dl = document.getElementById(datalistId);
-    dl.innerHTML = tags.map(t => `<option value="${escapeHtml(t)}">`).join("");
+    dl.innerHTML = [...tagSet].map(t => `<option value="${escapeHtml(t)}">`).join("");
+  }
+  function getAllTags() {
+    const entries = loadEntries();
+    const tagSet = new Set();
+    entries.forEach(e => {
+      const t = e.tags || (e.tag ? [e.tag] : []);
+      t.forEach(tag => { if (tag) tagSet.add(tag); });
+    });
+    return [...tagSet];
+  }
+  function getEntryTags(entry) {
+    return entry.tags || (entry.tag ? [entry.tag] : []);
   }
 
   // ==================== 日付ユーティリティ ====================
@@ -1768,7 +1795,9 @@
   const startDateEl = document.getElementById("startDate");
   const daysEl = document.getElementById("days");
   const titleInputEl = document.getElementById("titleInput");
-  const tagInputEl = document.getElementById("tagInput");
+  const tagInputEls = [1,2,3,4].map(i => document.getElementById("tagInput" + i));
+  function getTagsFromInputs(els) { return els.map(el => el.value.trim()).filter(Boolean); }
+  function setTagsToInputs(els, tags) { els.forEach((el, i) => el.value = (tags && tags[i]) || ""); }
   const memoInputEl = document.getElementById("memoInput");
   const endDateTxt = document.getElementById("endDateTxt");
   const fromTodayTxt = document.getElementById("fromTodayTxt");
@@ -1864,7 +1893,7 @@
     if (!canAddEntry()) { showUpgradePrompt(); return; }
     const entries = loadEntries();
     const titleText = titleInputEl.value.trim();
-    const tagText = tagInputEl.value.trim();
+    const tags = getTagsFromInputs(tagInputEls);
     const memoText = memoInputEl.value.trim();
     const displayName = titleText || "（タイトルなし）";
     entries.push({
@@ -1873,7 +1902,7 @@
       start: formatISO(lastCalcStart),
       end: formatISO(lastCalcEnd),
       days: Number(daysEl.value),
-      tag: tagText,
+      tags: tags,
       memo: memoText,
       createdAt: new Date().toISOString()
     });
@@ -1947,6 +1976,30 @@
     if (filtered.length < entries.length) saveEntries(filtered);
   }
 
+  let activeTagFilter = null; // null = すべて表示
+
+  function renderTagFilter() {
+    const tags = getAllTags();
+    const container = document.getElementById("ganttTagFilter");
+    if (tags.length === 0) {
+      container.style.display = "none";
+      return;
+    }
+    container.style.display = "block";
+    const btnStyle = (active) => `display:inline-block;padding:5px 14px;margin:0 4px;border-radius:20px;border:1.5px solid ${active ? 'var(--primary)' : 'var(--border)'};background:${active ? 'var(--primary)' : '#fff'};color:${active ? '#fff' : 'var(--text-main)'};font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;`;
+    let html = `<button style="${btnStyle(activeTagFilter === null)}" onclick="setTagFilter(null)">すべて</button>`;
+    tags.forEach(tag => {
+      html += `<button style="${btnStyle(activeTagFilter === tag)}" onclick="setTagFilter('${escapeHtml(tag)}')">${escapeHtml(tag)}</button>`;
+    });
+    container.innerHTML = html;
+  }
+
+  function setTagFilter(tag) {
+    activeTagFilter = tag;
+    renderTagFilter();
+    renderGantt();
+  }
+
   function renderGantt() {
     purgeExpiredEntries();
     const entries = loadEntries();
@@ -1965,8 +2018,11 @@
     const maxStr = maxE === Infinity ? "∞" : maxE;
     document.getElementById("entryCounter").textContent = `(${entries.length}/${maxStr})`;
 
+    // タグフィルター更新
+    renderTagFilter();
+
     // 表示エントリ
-    const displayEntries = [...entries];
+    let displayEntries = [...entries];
     if (lastCalcStart && lastCalcEnd) {
       const alreadyRegistered = entries.some(e =>
         e.start === formatISO(lastCalcStart) && e.end === formatISO(lastCalcEnd)
@@ -1978,11 +2034,19 @@
           start: formatISO(lastCalcStart),
           end: formatISO(lastCalcEnd),
           days: diffDaysInclusive(lastCalcStart, lastCalcEnd),
-          tag: tagInputEl.value.trim(),
+          tags: getTagsFromInputs(tagInputEls),
           memo: memoInputEl.value.trim(),
           _preview: true
         });
       }
+    }
+
+    // タグフィルター適用
+    if (activeTagFilter !== null) {
+      displayEntries = displayEntries.filter(e => {
+        const t = getEntryTags(e);
+        return t.includes(activeTagFilter);
+      });
     }
 
     if (displayEntries.length === 0) {
@@ -2009,9 +2073,10 @@
     // タグ別グループ化
     const tagGroups = new Map();
     displayEntries.forEach((entry, idx) => {
-      const tag = entry.tag || "";
-      if (!tagGroups.has(tag)) tagGroups.set(tag, []);
-      tagGroups.get(tag).push({ entry, idx });
+      const tags = getEntryTags(entry);
+      const groupKey = tags.length > 0 ? tags.join(", ") : "";
+      if (!tagGroups.has(groupKey)) tagGroups.set(groupKey, []);
+      tagGroups.get(groupKey).push({ entry, idx });
     });
 
     // 行
@@ -2208,9 +2273,10 @@
     // タグ別にグループ化
     const tagMap = new Map();
     entries.forEach(e => {
-      const tag = e.tag || "";
-      if (!tagMap.has(tag)) tagMap.set(tag, []);
-      tagMap.get(tag).push(e);
+      const tags = getEntryTags(e);
+      const key = tags.length > 0 ? tags.join(", ") : "";
+      if (!tagMap.has(key)) tagMap.set(key, []);
+      tagMap.get(key).push(e);
     });
 
     let printHTML = `<html><head><meta charset="utf-8"><title>残日数（残薬）</title>
@@ -2287,7 +2353,9 @@
     document.getElementById("editTitle").value = entry.name || "";
     document.getElementById("editStart").value = entry.start;
     document.getElementById("editDays").value = entry.days;
-    document.getElementById("editTag").value = entry.tag || "";
+    const editTagEls = [1,2,3,4].map(i => document.getElementById("editTag" + i));
+    const entryTags = entry.tags || (entry.tag ? [entry.tag] : []);
+    setTagsToInputs(editTagEls, entryTags);
     document.getElementById("editMemo").value = entry.memo || "";
     updateTagSuggestions("editTagSuggestions");
     updateEditPreview(entry);
@@ -2302,7 +2370,8 @@
     const title = document.getElementById("editTitle").value.trim();
     const startVal = document.getElementById("editStart").value;
     const daysVal = Number(document.getElementById("editDays").value);
-    const tagVal = document.getElementById("editTag").value.trim();
+    const editTagEls = [1,2,3,4].map(i => document.getElementById("editTag" + i));
+    const tagsVal = getTagsFromInputs(editTagEls);
     const memo = document.getElementById("editMemo").value.trim();
     if (!startVal || !daysVal || daysVal < 1) {
       showToast("開始日と日数を入力してください");
@@ -2314,7 +2383,7 @@
     entries[idx].start = formatISO(start);
     entries[idx].end = formatISO(end);
     entries[idx].days = daysVal;
-    entries[idx].tag = tagVal;
+    entries[idx].tags = tagsVal;
     entries[idx].memo = memo;
     saveEntries(entries);
     closeEditModal();
@@ -2592,7 +2661,7 @@
     startDateEl.value = "";
     daysEl.value = "";
     titleInputEl.value = "";
-    tagInputEl.value = "";
+    tagInputEls.forEach(el => el.value = "");
     memoInputEl.value = "";
     endDateTxt.textContent = "---";
     endDateTxt.classList.add("empty");
