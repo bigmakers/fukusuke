@@ -589,9 +589,11 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       z-index: 100;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
       padding: 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .modal-overlay.active { display: flex; }
     .modal {
@@ -1274,7 +1276,20 @@
             <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
             共有
           </button>
+          <button class="btn" id="editQRBtn" style="background:linear-gradient(135deg,#1e293b,#334155);color:#fff;">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM17 17h4v4h-4zM14 14h3v3h-3zM17 14h4v3h-4z" /></svg>
+            QR
+          </button>
+          <button class="btn" id="editPrintBtn" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+            印刷
+          </button>
         </div>
+      </div>
+      <!-- QRコード表示エリア -->
+      <div id="qrCodeArea" style="display:none;margin-top:16px;text-align:center;">
+        <label style="display:block;margin-bottom:8px;">QRコード（相手に読み取ってもらう）</label>
+        <canvas id="qrCanvas" style="max-width:200px;width:100%;height:auto;border-radius:12px;"></canvas>
       </div>
       <div style="margin-top:16px;text-align:center;">
         <button class="btn-delete-entry" id="editDeleteBtn">この項目を削除</button>
@@ -1383,6 +1398,245 @@
   <div class="toast" id="toast"></div>
 
 <script>
+  // ==================== QRコード生成 (軽量実装) ====================
+  const QRCode = (() => {
+    // Galois Field tables for QR Code
+    const EXP = new Uint8Array(256), LOG = new Uint8Array(256);
+    let x = 1;
+    for (let i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x = (x << 1) ^ (x & 128 ? 0x11d : 0); }
+
+    function rsGenPoly(n) {
+      let p = [1];
+      for (let i = 0; i < n; i++) {
+        const np = new Array(p.length + 1).fill(0);
+        for (let j = 0; j < p.length; j++) {
+          np[j] ^= p[j];
+          np[j + 1] ^= gfMul(p[j], EXP[i]);
+        }
+        p = np;
+      }
+      return p;
+    }
+
+    function gfMul(a, b) { return a && b ? EXP[(LOG[a] + LOG[b]) % 255] : 0; }
+
+    function rsEncode(data, ecLen) {
+      const gen = rsGenPoly(ecLen);
+      const msg = new Uint8Array(data.length + ecLen);
+      msg.set(data);
+      for (let i = 0; i < data.length; i++) {
+        const coef = msg[i];
+        if (coef) for (let j = 0; j < gen.length; j++) msg[i + j] ^= gfMul(gen[j], coef);
+      }
+      return msg.slice(data.length);
+    }
+
+    // Version/EC tables (versions 1-10, EC level L)
+    const VER_INFO = [
+      null,
+      { total: 26, ec: 7, dataCodewords: 19, groups: [[1,19]] },
+      { total: 44, ec: 10, dataCodewords: 34, groups: [[1,34]] },
+      { total: 70, ec: 15, dataCodewords: 55, groups: [[1,55]] },
+      { total: 100, ec: 20, dataCodewords: 80, groups: [[1,80]] },
+      { total: 134, ec: 26, dataCodewords: 108, groups: [[1,108]] },
+      { total: 172, ec: 18, dataCodewords: 136, groups: [[2,68]] },
+      { total: 196, ec: 20, dataCodewords: 156, groups: [[2,78]] },
+      { total: 242, ec: 24, dataCodewords: 194, groups: [[2,97]] },
+      { total: 292, ec: 30, dataCodewords: 232, groups: [[2,116]] },
+      { total: 346, ec: 18, dataCodewords: 274, groups: [[2,68],[2,69]] },
+    ];
+
+    function getVersion(len) {
+      for (let v = 1; v <= 10; v++) {
+        const cap = VER_INFO[v].dataCodewords - 2; // minus mode+length bytes
+        if (len <= cap) return v;
+      }
+      return -1;
+    }
+
+    function encode(text) {
+      const data = new TextEncoder().encode(text);
+      const ver = getVersion(data.length);
+      if (ver < 0) return null;
+      const info = VER_INFO[ver];
+      const size = 17 + ver * 4;
+
+      // Build data bitstream (byte mode = 0100)
+      const bits = [];
+      const push = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); };
+      push(0b0100, 4); // byte mode
+      push(data.length, ver <= 9 ? 8 : 16);
+      for (const b of data) push(b, 8);
+      // Terminator
+      const totalDataBits = info.dataCodewords * 8;
+      for (let i = 0; i < 4 && bits.length < totalDataBits; i++) bits.push(0);
+      while (bits.length % 8) bits.push(0);
+      // Pad bytes
+      const padBytes = [0xEC, 0x11];
+      let pi = 0;
+      while (bits.length < totalDataBits) { push(padBytes[pi % 2], 8); pi++; }
+
+      // Convert to bytes
+      const codewords = new Uint8Array(info.dataCodewords);
+      for (let i = 0; i < info.dataCodewords; i++) {
+        let b = 0;
+        for (let j = 0; j < 8; j++) b = (b << 1) | (bits[i * 8 + j] || 0);
+        codewords[i] = b;
+      }
+
+      // RS error correction
+      const ecPerBlock = info.ec / (info.groups.reduce((s, g) => s + g[0], 0));
+      const dataBlocks = [], ecBlocks = [];
+      let offset = 0;
+      for (const [count, blockSize] of info.groups) {
+        for (let b = 0; b < count; b++) {
+          const block = codewords.slice(offset, offset + blockSize);
+          dataBlocks.push(block);
+          ecBlocks.push(rsEncode(block, ecPerBlock));
+          offset += blockSize;
+        }
+      }
+
+      // Interleave
+      const final = [];
+      const maxData = Math.max(...dataBlocks.map(b => b.length));
+      for (let i = 0; i < maxData; i++) for (const b of dataBlocks) if (i < b.length) final.push(b[i]);
+      for (let i = 0; i < ecPerBlock; i++) for (const b of ecBlocks) if (i < b.length) final.push(b[i]);
+
+      // Place on grid
+      const grid = Array.from({ length: size }, () => new Uint8Array(size));
+      const used = Array.from({ length: size }, () => new Uint8Array(size));
+
+      function setMod(r, c, val) { grid[r][c] = val ? 1 : 0; used[r][c] = 1; }
+
+      // Finder patterns
+      function finderPattern(row, col) {
+        for (let r = -1; r <= 7; r++) for (let c = -1; c <= 7; c++) {
+          const rr = row + r, cc = col + c;
+          if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
+          const inOuter = r >= 0 && r <= 6 && c >= 0 && c <= 6;
+          const inInner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
+          const isEdge = r === 0 || r === 6 || c === 0 || c === 6;
+          setMod(rr, cc, inInner || (inOuter && isEdge) ? 1 : 0);
+        }
+      }
+      finderPattern(0, 0);
+      finderPattern(0, size - 7);
+      finderPattern(size - 7, 0);
+
+      // Alignment patterns
+      if (ver >= 2) {
+        const positions = [6, size - 7]; // simplified for versions 2-10
+        for (const r of positions) for (const c of positions) {
+          if (used[r][c]) continue;
+          for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) {
+            const abs_dr = Math.abs(dr), abs_dc = Math.abs(dc);
+            setMod(r + dr, c + dc, abs_dr === 2 || abs_dc === 2 || (dr === 0 && dc === 0) ? 1 : 0);
+          }
+        }
+      }
+
+      // Timing patterns
+      for (let i = 8; i < size - 8; i++) {
+        if (!used[6][i]) setMod(6, i, i % 2 === 0 ? 1 : 0);
+        if (!used[i][6]) setMod(i, 6, i % 2 === 0 ? 1 : 0);
+      }
+
+      // Dark module + reserved
+      setMod(size - 8, 8, 1);
+
+      // Reserve format info areas
+      for (let i = 0; i < 15; i++) {
+        // Horizontal
+        const hc = i < 8 ? i : (i < 9 ? i + 1 : size - 15 + i);
+        if (!used[8][hc]) used[8][hc] = 1;
+        // Vertical
+        const vr = i < 6 ? i : (i < 8 ? i + 1 : size - 15 + i);
+        if (!used[vr][8]) used[vr][8] = 1;
+      }
+
+      // Place data
+      const finalBits = [];
+      for (const b of final) for (let i = 7; i >= 0; i--) finalBits.push((b >> i) & 1);
+
+      let bitIdx = 0;
+      for (let right = size - 1; right >= 1; right -= 2) {
+        if (right === 6) right = 5;
+        for (let vert = 0; vert < size; vert++) {
+          for (const j of [0, 1]) {
+            const col = right - j;
+            const upward = ((right + 1) / 2 | 0) % 2 === (ver > 6 ? 0 : 1);
+            const row = ((right + 1) >> 1) % 2 === 1 ? vert : size - 1 - vert;
+            const actualRow = upward ? size - 1 - vert : vert;
+            if (!used[actualRow][col]) {
+              grid[actualRow][col] = bitIdx < finalBits.length ? finalBits[bitIdx] : 0;
+              used[actualRow][col] = 1;
+              bitIdx++;
+            }
+          }
+        }
+      }
+
+      // Apply mask 0 (checkerboard) and format info
+      for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+        if (used[r][c] && !isFunction(r, c, size, ver)) {
+          if ((r + c) % 2 === 0) grid[r][c] ^= 1;
+        }
+      }
+
+      // Format info for mask 0, EC level L = 0b111011111000100
+      const fmtBits = 0b111011111000100;
+      for (let i = 0; i < 15; i++) {
+        const bit = (fmtBits >> (14 - i)) & 1;
+        // Horizontal along row 8
+        const hc = i < 8 ? i : (i < 9 ? i + 1 : size - 15 + i);
+        grid[8][hc] = bit;
+        // Vertical along column 8
+        const vr = i < 6 ? i : (i < 8 ? i + 1 : size - 15 + i);
+        grid[vr][8] = bit;
+      }
+
+      return { grid, size };
+    }
+
+    function isFunction(r, c, size, ver) {
+      // Finder + separators
+      if (r <= 8 && c <= 8) return true;
+      if (r <= 8 && c >= size - 8) return true;
+      if (r >= size - 8 && c <= 8) return true;
+      // Timing
+      if (r === 6 || c === 6) return true;
+      // Alignment
+      if (ver >= 2) {
+        const ar = size - 7, ac = size - 7;
+        if (Math.abs(r - ar) <= 2 && Math.abs(c - ac) <= 2) return true;
+      }
+      // Dark module
+      if (r === size - 8 && c === 8) return true;
+      return false;
+    }
+
+    function toCanvas(canvas, text, cellSize = 6) {
+      const result = encode(text);
+      if (!result) return false;
+      const { grid, size: s } = result;
+      const quiet = 4;
+      const total = s + quiet * 2;
+      canvas.width = total * cellSize;
+      canvas.height = total * cellSize;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#000';
+      for (let r = 0; r < s; r++) for (let c = 0; c < s; c++) {
+        if (grid[r][c]) ctx.fillRect((c + quiet) * cellSize, (r + quiet) * cellSize, cellSize, cellSize);
+      }
+      return true;
+    }
+
+    return { toCanvas };
+  })();
+
   // ==================== プラン管理 ====================
   const PLAN_KEY = "fukusuke_plan";
   const PLANS = {
@@ -2126,12 +2380,74 @@
   // ==================== 編集モーダル ====================
   function closeEditModal() {
     document.getElementById("editModal").classList.remove("active");
+    document.getElementById("qrCodeArea").style.display = "none";
     editingEntryId = null;
   }
   document.getElementById("editModalClose").addEventListener("click", closeEditModal);
   document.getElementById("editSaveBtn").addEventListener("click", saveEditEntry);
   document.getElementById("editCopyBtn").addEventListener("click", copyEntryToClipboard);
   document.getElementById("editShareBtn").addEventListener("click", shareEntry);
+  document.getElementById("editQRBtn").addEventListener("click", () => {
+    if (editingEntryId === null) return;
+    const entry = loadEntries().find(e => e.id === editingEntryId);
+    if (!entry) return;
+    const shareData = { t: entry.name, s: entry.start, d: entry.days, m: entry.memo || "" };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(shareData))));
+    const url = `calday://import?data=${encoded}`;
+    const area = document.getElementById("qrCodeArea");
+    const canvas = document.getElementById("qrCanvas");
+    if (area.style.display === "none") {
+      if (QRCode.toCanvas(canvas, url)) {
+        area.style.display = "block";
+        area.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        showToast("データが大きすぎてQRコードを生成できません");
+      }
+    } else {
+      area.style.display = "none";
+    }
+  });
+  document.getElementById("editPrintBtn").addEventListener("click", () => {
+    if (editingEntryId === null) return;
+    const entries = loadEntries();
+    const today = toNoon(new Date());
+    // 全エントリの残日数リストを作成
+    let printHTML = `<html><head><meta charset="utf-8"><title>残日数（残薬）</title>
+      <style>
+        body { font-family: -apple-system, sans-serif; padding: 20px; color: #333; }
+        h1 { font-size: 20px; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+        th { background: #f5f5f5; font-weight: 700; }
+        .ended { color: #999; }
+        .urgent { color: #e11d48; font-weight: 700; }
+        .print-date { text-align: right; font-size: 12px; color: #666; margin-bottom: 10px; }
+        @media print { body { padding: 0; } }
+      </style></head><body>`;
+    const now = new Date();
+    printHTML += `<div class="print-date">印刷日: ${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}</div>`;
+    printHTML += `<h1>残日数（残薬）</h1>`;
+    printHTML += `<table><tr><th>タイトル</th><th>期間</th><th>日数</th><th>残日数</th><th>メモ</th></tr>`;
+    const sorted = [...entries].sort((a, b) => a.start.localeCompare(b.start));
+    for (const e of sorted) {
+      const endD = new Date(e.end + "T12:00:00");
+      const remaining = diffDaysInclusive(today, endD);
+      const cls = remaining <= 0 ? 'ended' : remaining <= 3 ? 'urgent' : '';
+      const remainStr = remaining <= 0 ? '終了' : `${remaining}日`;
+      const startD = new Date(e.start + "T12:00:00");
+      printHTML += `<tr class="${cls}"><td>${escapeHtml(e.name)}</td><td>${formatJP(startD)} 〜 ${formatJP(endD)}</td><td>${e.days}日</td><td>${remainStr}</td><td>${escapeHtml(e.memo || '')}</td></tr>`;
+    }
+    printHTML += `</table></body></html>`;
+    const printWin = window.open('', '_blank');
+    if (printWin) {
+      printWin.document.write(printHTML);
+      printWin.document.close();
+      printWin.focus();
+      setTimeout(() => printWin.print(), 300);
+    } else {
+      showToast("ポップアップがブロックされました");
+    }
+  });
   document.getElementById("editDeleteBtn").addEventListener("click", () => {
     if (editingEntryId === null) return;
     if (confirm("この項目を削除しますか？")) {
@@ -2509,6 +2825,15 @@
   }
   updateHeaderClock();
   setInterval(updateHeaderClock, 1000);
+
+  // ==================== キーボード対応 ====================
+  document.querySelectorAll('.modal input, .modal textarea').forEach(el => {
+    el.addEventListener('focus', () => {
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    });
+  });
 
   // ==================== 初期化 ====================
   ganttStartDate = toNoon(new Date());
