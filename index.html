@@ -1948,6 +1948,24 @@
     setTimeout(() => { toast.classList.remove("show"); }, 2500);
   }
 
+  function printViaIframe(html, onDone) {
+    let iframe = document.getElementById("printIframe");
+    if (iframe) iframe.remove();
+    iframe = document.createElement("iframe");
+    iframe.id = "printIframe";
+    iframe.style.cssText = "position:fixed;width:0;height:0;border:none;left:-9999px;";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    iframe.contentWindow.focus();
+    setTimeout(() => {
+      iframe.contentWindow.print();
+      setTimeout(() => { iframe.remove(); if (onDone) onDone(); }, 1000);
+    }, 300);
+  }
+
   // ==================== ページ切り替え ====================
   function showPage(page) {
     document.getElementById('pageInput').classList.toggle('active', page === 'input');
@@ -2313,15 +2331,7 @@
       printHTML += `</table>`;
     }
     printHTML += `</body></html>`;
-    const printWin = window.open('', '_blank');
-    if (printWin) {
-      printWin.document.write(printHTML);
-      printWin.document.close();
-      printWin.focus();
-      setTimeout(() => { printWin.print(); toggleShareMode(); }, 300);
-    } else {
-      showToast("ポップアップがブロックされました");
-    }
+    printViaIframe(printHTML, () => toggleShareMode());
   }
 
   document.getElementById('ganttShareModeBtn').addEventListener('click', toggleShareMode);
@@ -2613,15 +2623,7 @@
       printHTML += `<tr class="${cls}"><td>${escapeHtml(e.name)}</td><td>${formatJP(startD)} 〜 ${formatJP(endD)}</td><td>${e.days}日</td><td>${remainStr}</td><td>${escapeHtml(e.memo || '')}</td></tr>`;
     }
     printHTML += `</table></body></html>`;
-    const printWin = window.open('', '_blank');
-    if (printWin) {
-      printWin.document.write(printHTML);
-      printWin.document.close();
-      printWin.focus();
-      setTimeout(() => printWin.print(), 300);
-    } else {
-      showToast("ポップアップがブロックされました");
-    }
+    printViaIframe(printHTML);
   });
   document.getElementById("editDeleteBtn").addEventListener("click", () => {
     if (editingEntryId === null) return;
